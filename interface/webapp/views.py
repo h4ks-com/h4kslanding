@@ -1,3 +1,15 @@
-from django.shortcuts import render
+from django.http import HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponseServerError
 
-# Create your views here.
+from django.shortcuts import render
+from django.template import loader
+from django.utils import timezone
+
+from datetime import datetime
+
+index_template="index.html"
+
+def index(request):
+    template = loader.get_template(index_template)
+    context = { }
+    return HttpResponse(template.render(context, request))
