@@ -1,7 +1,56 @@
 {% load static %}
 <html>
 <head><title>h4ks</title></head>
+
+<div class="content">
+<body onload="startTime()">
+<script>
+function startTime() {
+  const today = new Date();
+  //const today = new Date(<?php echo time(); ?>);
+
+  let h = today.getHours();
+  let m = today.getMinutes();
+  let s = today.getSeconds();
+
+  m = checkTime(m);
+  s = checkTime(s);
+
+  //document.getElementById('txt01').innerHTML =  h + ":" + m + ":" + s;
+
+  {% for location in locations %}
+  zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}' })
+  document.getElementById('{{ location.id }}').innerHTML =  "<span style='color:black'>" + zonetime + "</span>";
+  {% endfor %}
+
+  setTimeout(startTime, 1000);
+}
+
+function checkTime(i) {
+  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+  return i;
+}
+</script>
+
+
+<div style="float:left">
+{% for location in locations %}
+<br><span style="float:left; color: {{ location.color }}">{{ location.name }}</span>
+<div id="{{ location.id }}" style="float:right"></div>
+{% endfor %}
+</div>
+
 <body>
-hi
+h4ks
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
