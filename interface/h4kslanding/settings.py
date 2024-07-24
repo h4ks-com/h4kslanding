@@ -20,7 +20,7 @@ from decouple import config
 # update secret
 #SECRET_KEY = os.environ['SECRET_KEY'] # replacement for actual key
 
-SECRET_KEY = config['SECRET_KEY'] # replacement for actual key
+SECRET_KEY = config('SECRET_KEY') # replacement for actual key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
