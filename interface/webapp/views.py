@@ -15,5 +15,5 @@ def index(request):
     template = loader.get_template(index_template)
     locations = Location.objects.all()
     apps = App.objects.all()
-    context = { "locations": locations, "apps", apps, }
+    context = { "locations": locations, "apps": apps, }
     return HttpResponse(template.render(context, request))
