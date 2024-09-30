@@ -36,10 +36,12 @@ function checkTime(i) {
 h4ks 2024
 <br>
 
+<div style="float:left">
 {% for location in locations %}
 <br><span style="float:left; color: {{ location.color }}">{{ location.name }}</span>
 <div id="{{ location.id }}" style="float:right"></div>
 {% endfor %}
+</div>
 
 </body>
 </html>
