@@ -1,8 +1,6 @@
 {% load static %}
 <html>
 <head><title>h4ks</title></head>
-
-<div class="content">
 <body onload="startTime()">
 <script>
 function startTime() {
@@ -42,10 +40,13 @@ h4ks 2024
 <div id="{{ location.id }}" style="float:right"></div>
 {% endfor %}
 </div>
+</div>
 
+<div style="float:left">
 {% for app in apps %}
 <br><a href="{{ app.location }}">{{ app.name }}</a>
 {% endfor %}
+</div>
 
 </body>
 </html>
