@@ -16,12 +16,10 @@ function startTime() {
   m = checkTime(m);
   s = checkTime(s);
 
-  //document.getElementById('txt01').innerHTML =  h + ":" + m + ":" + s;
-
-  {% for location in locations %}
+{% for location in locations %}
   zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}' })
-  document.getElementById('{{ location.id }}').innerHTML =  "<span style='color:black'>" + zonetime + "</span>";
-  {% endfor %}
+  document.getElementById('{{ location.id }}').innerHTML =  zonetime;
+{% endfor %}
 
   setTimeout(startTime, 1000);
 }
@@ -32,25 +30,30 @@ function checkTime(i) {
 }
 </script>
 
+<div style="float:right">
 
-<div style="float:left">
+<div id="txt01" style="float:right"></div>
+<span style="color:brown;">
+server:
+<?php
+date_default_timezone_set('UTC'); // UTC
+
+$current_date = date('D d M Y H:i:s');
+$current_str = $current_date;
+$current_stg = "h";
+$current_str = '<a href = "https://github.com/handyc/wnow">'.$current_str.'</a>';
+//echo $current_str;
+echo $current_date;
+?>
+</span>
+
+h4ks [[ : ]]
+<br>
+
 {% for location in locations %}
 <br><span style="float:left; color: {{ location.color }}">{{ location.name }}</span>
-<div id="{{ location.id }}" style="float:right"></div>
+<div id="{{ location.id }}" style="float:left"></div>
 {% endfor %}
-</div>
-
-<body>
-h4ks
-
-
-
-
-
-
-
-
-
 
 </body>
 </html>
