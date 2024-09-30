@@ -6,6 +6,8 @@ from django.template import loader
 from django.utils import timezone
 
 from datetime import datetime
+from .models import Location
+from .models import App
 
 index_template="index.html"
 
