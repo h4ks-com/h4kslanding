@@ -16,7 +16,7 @@ function startTime() {
   s = checkTime(s);
 
 {% for location in locations %}
-  zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}' })
+  zonetime = today.toLocaleString('en-US', { hour12: 'false', timeZone: '{{ location.zone }}' })
   document.getElementById('{{ location.id }}').innerHTML =  zonetime;
 {% endfor %}
 
