@@ -1,8 +1,12 @@
 {% load static %}
 <html>
-<head><title>h4ks</title></head>
+<head>
+<title>h4ks</title>
 
-<body onload="startTime()" style="background-color: #808000;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body onload="startTime()">
 <script>
 function startTime() {
   const today = new Date();
@@ -28,7 +32,66 @@ function checkTime(i) {
   return i;
 }
 </script>
+<style>
+body {
+	            font-family: Arial, sans-serif;
+	            background-color: #f9f9f9;
+	            color: #333;
+	            margin: 0;
+	            padding: 20px;
+	        }
+	        h1, h2 {
+	            color: #4A90E2;
+	        }
+	        ul {
+	            list-style-type: none;
+	            padding: 0;
+	        }
+	        a {
+	            text-decoration: none;
+	            color: #4A90E2;
+	            margin: 10px;
+	        }
+	        footer {
+	            text-align: center;
+	            padding: 20px;
+	            background-color: #f1f1f1;
+	        }
+	        #lightbox {
+	            display: none;
+	            position: fixed;
+	            top: 0;
+	            left: 0;
+	            width: 100%;
+	            height: 100%;
+	            background-color: rgba(0, 0, 0, 0.8);
+	            justify-content: center;
+	            align-items: center;
+	        }
+	        #lightbox-img {
+	            max-width: 90%;
+	            max-height: 90%;
+	        }
+</style>
+<h1 style="text-align: center;">Welcome to the h4ks Server</h1>
+<p style="font-size: 1.5em; text-align: center;">Server Time: <strong>{% now "d M Y H:i:s.u" %}</strong></p>
+<h2>Useful Links</h2>
+<div style="display: flex; flex-wrap: wrap; justify-content: center;">
+{% for app in apps %}
+ <a href="{{ app.location }}">{{ app.name }}</a>
+{% endfor %}
+</div>
 
+<h2>Cities Around the World</h2>
+<ul style="text-align: center;">
+<li>
+{% for location in locations %}
+<strong>{{ location.name }}</strong><br>
+<em id="{{ location.id }}"></em>
+</li>
+{% endfor %}
+</ul>
+<!--
 <div style="float:left">
 
 <div id="txt01" style="float:right"></div>
@@ -48,45 +111,6 @@ h4ks server time: {% now "d M Y H:i:s.u" %}
 <br><a href="{{ app.location }}">{{ app.name }}</a>
 {% endfor %}
 </div>
-
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-<a href="{% static 'webapp/img/term0.jpg' %}"><img src="{% static 'webapp/img/term0.jpg' %}" style="padding: 10px; border: 5px solid gray; margin: 20px; float:left" alt="sowhat" width="20%"></a>
-
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-<a href="{% static 'webapp/img/term1.jpg' %}"><img src="{% static 'webapp/img/term1.jpg' %}" style="padding: 10px; border: 5px solid red; margin: 30px; float:left" alt="sowhat" width="10%"></a>
-
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-<a href="{% static 'webapp/img/term2.jpg' %}"><img src="{% static 'webapp/img/term2.jpg' %}" style="padding: 10px; border: 5px solid yellow; float:left" alt="sowhat" width="5%"></a>
-
+-->
 </body>
 </html>
