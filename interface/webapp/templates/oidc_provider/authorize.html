@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Consent Screen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .consent-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 400px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        p {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .scope {
+            margin: 10px 0;
+            padding: 5px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+        }
+        input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 1%;
+        }
+        input:hover {
+            background-color: #218838;
+        }
+        .cancel-btn {
+            background-color: #dc3545;
+        }
+        .cancel-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="consent-container">
+        <h2>Permission Request</h2>
+        <p>The application "{{client.name}}" is requesting access to the following:</p>
+        {% for scope in scopes %}
+        <div class="scope">{{scope.description}}</div>
+        {% endfor %}
+        <p>Do you consent to this request?</p>
+        <div>
+            <form method="post" action="{% url 'oidc_provider:authorize' %}">
+            {% csrf_token %}
+            {{ hidden_inputs }}
+            <input type="submit" name="allow" value="Accept">
+            <input class="cancel-btn" type="submit" value="Deny">
+            </form>
+        </div>
+    </div>
+</body>
+</html>
