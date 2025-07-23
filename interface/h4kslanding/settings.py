@@ -30,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config('DEBUG')
 
 #ALLOWED_HOSTS = ['h4ks.com',]
 ALLOWED_HOSTS = ['*',]
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'oidc_provider'
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,5 @@ STATIC_ROOT = "static"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL='/accounts/login'

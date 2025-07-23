@@ -84,8 +84,9 @@ body {
 
 <h2>Cities Around the World</h2>
 <ul style="text-align: center;">
-<li>
+
 {% for location in locations %}
+<li>
 <strong>{{ location.name }}</strong><br>
 <em id="{{ location.id }}"></em>
 </li>
