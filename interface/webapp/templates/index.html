@@ -10,8 +10,6 @@
 <script>
 function startTime() {
   const today = new Date();
-  //const today = new Date(<?php echo time(); ?>);
-
   let h = today.getHours();
   let m = today.getMinutes();
   let s = today.getSeconds();
@@ -20,7 +18,7 @@ function startTime() {
   s = checkTime(s);
 
 {% for location in locations %}
-  zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}' })
+  zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}',day: "numeric", month: "long",year:"numeric",hour:"numeric", minute: "numeric",second:"numeric",hour12:false}).replace(",","").replace("at","")
   document.getElementById('{{ location.id }}').innerHTML =  zonetime;
 {% endfor %}
 
@@ -57,61 +55,32 @@ body {
 	            padding: 20px;
 	            background-color: #f1f1f1;
 	        }
-	        #lightbox {
-	            display: none;
-	            position: fixed;
-	            top: 0;
-	            left: 0;
-	            width: 100%;
-	            height: 100%;
-	            background-color: rgba(0, 0, 0, 0.8);
-	            justify-content: center;
-	            align-items: center;
-	        }
-	        #lightbox-img {
-	            max-width: 90%;
-	            max-height: 90%;
-	        }
+	        .location {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		}
 </style>
 <h1 style="text-align: center;">Welcome to the h4ks Server</h1>
-<p style="font-size: 1.5em; text-align: center;">Server Time: <strong>{% now "d M Y H:i:s.u" %}</strong></p>
+<p style="font-size: 1.5em; text-align: center;">Server Time:<br><strong>{% now "d M Y H:i:s" %}</strong></p>
 <h2>Useful Links</h2>
 <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 {% for app in apps %}
- <a href="{{ app.location }}">{{ app.name }}</a>
+ <a href="{{ app.location }}" {% if app.color %} style="color: {{app.color}}" {% endif %}>{{ app.name }}</a>
 {% endfor %}
 </div>
 
 <h2>Cities Around the World</h2>
 <ul style="text-align: center;">
-
 {% for location in locations %}
 <li>
-<strong>{{ location.name }}</strong><br>
+<div class="location">
+<strong {% if location.color %} style="color: {{ location.color }}" {% endif %}>{{ location.name }}</strong><br>
 <em id="{{ location.id }}"></em>
+</div>
 </li>
 {% endfor %}
 </ul>
-<!--
-<div style="float:left">
-
-<div id="txt01" style="float:right"></div>
-h4ks server time: {% now "d M Y H:i:s.u" %}
-<br>
-
-<div style="float:left">
-{% for location in locations %}
-<br><span style="float:left; color: {{ location.color }}">{{ location.name }}</span>
-<div id="{{ location.id }}" style="float:right"></div>
-{% endfor %}
-</div>
-</div>
-
-<div style="padding: 10px; border: 5px solid blue; margin: 20px; float:left">
-{% for app in apps %}
-<br><a href="{{ app.location }}">{{ app.name }}</a>
-{% endfor %}
-</div>
--->
 </body>
 </html>
