@@ -6,29 +6,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
-<body onload="startTime()">
+<body onload="setInterval(startTime,1000)">
 <script>
+const options = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
 function startTime() {
-  const today = new Date();
-  let h = today.getHours();
-  let m = today.getMinutes();
-  let s = today.getSeconds();
-
-  m = checkTime(m);
-  s = checkTime(s);
-
 {% for location in locations %}
-  zonetime = today.toLocaleString('en-US', { timeZone: '{{ location.zone }}',day: "numeric", month: "long",year:"numeric",hour:"numeric", minute: "numeric",second:"numeric",hour12:false}).replace(",","").replace("at","")
+  today = new Date();
+  zonetime = today.toLocaleString('en-GB', { timeZone: '{{ location.zone }}',...options}).replace(/\,/g,"")
   document.getElementById('{{ location.id }}').innerHTML =  zonetime;
 {% endfor %}
-
   setTimeout(startTime, 1000);
 }
 
-function checkTime(i) {
-  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
-  return i;
-}
 </script>
 <style>
 body {
@@ -58,25 +47,25 @@ body {
 	        .location {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		justify-content: space-between;
 		gap: 2px;
 		}
+                .monospace {
+		font-family: monospace;
+		}
 </style>
-<h1 style="text-align: center;">Welcome to the h4ks Server</h1>
+<h1 style="text-align: center;">Welcome to the h4ks.com</h1>
 <p style="font-size: 1.5em; text-align: center;">Server Time:<br><strong>{% now "d M Y H:i:s" %}</strong></p>
-<h2>Useful Links</h2>
 <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 {% for app in apps %}
  <a href="{{ app.location }}" {% if app.color %} style="color: {{app.color}}" {% endif %}>{{ app.name }}</a>
 {% endfor %}
 </div>
-
-<h2>Cities Around the World</h2>
 <ul style="text-align: center;">
 {% for location in locations %}
 <li>
 <div class="location">
-<strong {% if location.color %} style="color: {{ location.color }}" {% endif %}>{{ location.name }}</strong><br>
+<strong {% if location.color %} style="color: {{ location.color }}" {% endif %} class="monospace">{{ location.name }}</strong><br>
 <em id="{{ location.id }}"></em>
 </div>
 </li>
