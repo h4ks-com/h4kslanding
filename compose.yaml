@@ -1,8 +1,17 @@
-version: '3.8'
 services:
   h4kslanding:
-    image: h4kslanding
+    build: .
+    env_file:
+      - .env
     ports:
       - "20000:20000"
     environment:
-      - SECRET_KEY=asdfkjsdkf
+      - SECRET_KEY=${SECRET_KEY:-xxxxxxxxxx}
+      - DEBUG=${DEBUG:-False}
+    volumes:
+      - db_data:/interface/data
+      - static_files:/interface/static
+
+volumes:
+  db_data:
+  static_files:
