@@ -20,10 +20,17 @@ from decouple import config
 # update secret
 #SECRET_KEY = os.environ['SECRET_KEY'] # replacement for actual key
 
-SECRET_KEY = config('SECRET_KEY') # replacement for actual key
+SECRET_KEY = config('SECRET_KEY')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Logto Configuration
+LOGTO_ENDPOINT = config('LOGTO_ENDPOINT', default='https://auth.h4ks.com')
+LOGTO_M2M_CLIENT_ID = config('LOGTO_M2M_CLIENT_ID', default='')
+LOGTO_M2M_CLIENT_SECRET = config('LOGTO_M2M_CLIENT_SECRET', default='')
+LOGTO_APP_ID = config('LOGTO_APP_ID', default='')
+LOGTO_REDIRECT_URI = config('LOGTO_REDIRECT_URI', default='https://h4ks.com/auth/callback')
 
 
 # Quick-start development settings - unsuitable for production
