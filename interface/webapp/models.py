@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from datetime import timedelta
 
 
@@ -61,3 +64,35 @@ class PendingUser(models.Model):
 
     def __str__(self):
         return f"{self.email} (expires: {self.expires_at})"
+
+
+class UserProfile(models.Model):
+    class Meta:
+        verbose_name_plural = "User Profiles"
+        permissions = [
+            ("can_manage_users", "Can manage users and promote to admin"),
+        ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    logto_sub = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    ssh_public_key = models.TextField(blank=True, help_text="SSH public key for h4ks.com access")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
+
+    def has_ssh_key(self):
+        return bool(self.ssh_public_key.strip())
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

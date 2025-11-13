@@ -1,5 +1,4 @@
-"""
-ASGI config for h4kslanding project.
+"""ASGI config for h4kslanding project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

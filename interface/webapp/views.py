@@ -1,19 +1,15 @@
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.http import Http404, HttpResponseServerError
-from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
+from django.http import Http404
 from django.template import loader
-from django.utils import timezone
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
-from urllib.parse import urlencode, quote
 
-from datetime import datetime
-from .models import Location, App, PendingUser
-import requests
+from .models import Location, App, PendingUser, UserProfile
+import httpx
 import base64
-import json
 import secrets
+import string
 import hashlib
 
 index_template="index.html"
@@ -87,7 +83,7 @@ def get_logto_access_token():
     }
 
     try:
-        response = requests.post(
+        response = httpx.post(
             f"{settings.LOGTO_ENDPOINT}/oidc/token",
             headers=headers,
             data=data,
@@ -105,9 +101,6 @@ def get_logto_access_token():
         return None
 
 def create_logto_user(access_token, email):
-    import secrets
-    import string
-
     random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
 
     headers = {
@@ -122,7 +115,7 @@ def create_logto_user(access_token, email):
     }
 
     try:
-        response = requests.post(
+        response = httpx.post(
             f"{settings.LOGTO_ENDPOINT}/api/users",
             headers=headers,
             json=data,
@@ -227,7 +220,7 @@ def signup_submit(request):
         if recovery_email:
             data['customData'] = {'recovery_email': recovery_email}
 
-        response = requests.post(
+        response = httpx.post(
             f"{settings.LOGTO_ENDPOINT}/api/users",
             headers=headers,
             json=data,
@@ -236,10 +229,11 @@ def signup_submit(request):
 
         if response.status_code in [200, 201]:
             pending_user.delete()
+            login_url = request.build_absolute_uri('/oidc/authenticate/')
             return JsonResponse({
                 'success': True,
                 'message': 'Account created successfully! You can now log in.',
-                'login_url': settings.LOGTO_ENDPOINT
+                'login_url': login_url
             })
         elif response.status_code == 422:
             error_data = response.json()
@@ -255,3 +249,48 @@ def signup_submit(request):
 
     except Exception as e:
         return JsonResponse({'error': f"An error occurred: {str(e)}"}, status=500)
+
+
+@login_required
+def profile(request):
+    try:
+        user_profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        user_profile = UserProfile.objects.create(user=request.user)
+
+    if request.method == 'POST':
+        ssh_key = request.POST.get('ssh_public_key', '').strip()
+
+        if ssh_key and not validate_ssh_public_key(ssh_key):
+            return JsonResponse({'error': 'Invalid SSH public key format'}, status=400)
+
+        user_profile.ssh_public_key = ssh_key
+        user_profile.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'SSH key updated successfully!'
+        })
+
+    template = loader.get_template('profile.html')
+    context = {
+        'user': request.user,
+        'profile': user_profile,
+        'ssh_host': 'h4ks.com'
+    }
+    return HttpResponse(template.render(context, request))
+
+
+def validate_ssh_public_key(key):
+    if not key:
+        return True
+
+    valid_prefixes = ('ssh-rsa', 'ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521')
+
+    for prefix in valid_prefixes:
+        if key.startswith(prefix):
+            parts = key.split()
+            if len(parts) >= 2:
+                return True
+
+    return False

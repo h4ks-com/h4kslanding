@@ -2,15 +2,15 @@ services:
   h4kslanding:
     build: .
     env_file:
-      - .env
+    - .env
     ports:
-      - "20000:20000"
+    - "20000:20000"
     environment:
-      - SECRET_KEY=${SECRET_KEY:-xxxxxxxxxx}
-      - DEBUG=${DEBUG:-False}
+    - SECRET_KEY=${SECRET_KEY:-xxxxxxxxxx}
+    - DEBUG=${DEBUG:-False}
     volumes:
-      - db_data:/interface/data
-      - static_files:/interface/static
+    - db_data:/interface/data
+    - static_files:/interface/static
 
 volumes:
   db_data:
