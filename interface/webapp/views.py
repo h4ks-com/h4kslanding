@@ -260,16 +260,18 @@ def profile(request):
 
     if request.method == 'POST':
         ssh_key = request.POST.get('ssh_public_key', '').strip()
+        user_timezone = request.POST.get('timezone', '').strip()
 
         if ssh_key and not validate_ssh_public_key(ssh_key):
             return JsonResponse({'error': 'Invalid SSH public key format'}, status=400)
 
         user_profile.ssh_public_key = ssh_key
+        user_profile.timezone = user_timezone
         user_profile.save()
 
         return JsonResponse({
             'success': True,
-            'message': 'SSH key updated successfully!'
+            'message': 'Profile updated successfully!'
         })
 
     template = loader.get_template('profile.html')

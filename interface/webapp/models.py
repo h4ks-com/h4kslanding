@@ -76,6 +76,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     logto_sub = models.CharField(max_length=255, unique=True, blank=True, null=True)
     ssh_public_key = models.TextField(blank=True, help_text="SSH public key for h4ks.com access")
+    timezone = models.CharField(max_length=64, blank=True, default='', help_text="User's preferred timezone (e.g., America/New_York)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

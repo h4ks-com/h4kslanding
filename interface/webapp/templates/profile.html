@@ -72,6 +72,15 @@
             box-sizing: border-box;
             resize: vertical;
         }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: white;
+        }
         button {
             background-color: #4A90E2;
             color: white;
@@ -161,20 +170,35 @@
             {% endif %}
         </div>
 
-        <div class="section">
-            <h2>SSH Access</h2>
+        <form id="profileForm">
+            {% csrf_token %}
 
-            <p>
-                <strong>Status:</strong>
-                {% if profile.has_ssh_key %}
-                    <span class="status-badge status-active">KEY CONFIGURED</span>
-                {% else %}
-                    <span class="status-badge status-inactive">NO KEY</span>
-                {% endif %}
-            </p>
+            <div class="section">
+                <h2>Preferences</h2>
 
-            <form id="sshForm">
-                {% csrf_token %}
+                <div class="form-group">
+                    <label for="timezone">Timezone:</label>
+                    <select id="timezone" name="timezone">
+                        <option value="">-- Select timezone --</option>
+                    </select>
+                    <p style="margin-top: 5px; font-size: 13px; color: #666;">
+                        Used to display times in your local timezone.
+                    </p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>SSH Access</h2>
+
+                <p>
+                    <strong>Status:</strong>
+                    {% if profile.has_ssh_key %}
+                        <span class="status-badge status-active">KEY CONFIGURED</span>
+                    {% else %}
+                        <span class="status-badge status-inactive">NO KEY</span>
+                    {% endif %}
+                </p>
+
                 <div class="form-group">
                     <label for="ssh_public_key">SSH Public Key:</label>
                     <textarea
@@ -185,36 +209,86 @@
                     >{{ profile.ssh_public_key }}</textarea>
                 </div>
 
-                <button type="submit" id="saveButton">Save SSH Key</button>
-            </form>
+                {% if profile.has_ssh_key %}
+                    <div class="ssh-instructions">
+                        <p><strong>✓ You can now connect via SSH:</strong></p>
+                        <p><code>ssh {{ ssh_host }}</code></p>
+                        <p style="margin-top: 10px; font-size: 14px; color: #555;">
+                            Make sure you're using the private key corresponding to the public key you uploaded.
+                        </p>
+                    </div>
+                {% else %}
+                    <div class="ssh-instructions">
+                        <p><strong>How to generate an SSH key:</strong></p>
+                        <p><code>ssh-keygen -t ed25519 -C "your_email@example.com"</code></p>
+                        <p style="margin-top: 10px; font-size: 14px; color: #555;">
+                            Then paste the contents of <code>~/.ssh/id_ed25519.pub</code> above.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
 
-            <div id="result" class="result"></div>
+            <button type="submit" id="saveButton">Save Profile</button>
+        </form>
 
-            {% if profile.has_ssh_key %}
-                <div class="ssh-instructions">
-                    <p><strong>✓ You can now connect via SSH:</strong></p>
-                    <p><code>ssh {{ ssh_host }}</code></p>
-                    <p style="margin-top: 10px; font-size: 14px; color: #555;">
-                        Make sure you're using the private key corresponding to the public key you uploaded.
-                    </p>
-                </div>
-            {% else %}
-                <div class="ssh-instructions">
-                    <p><strong>How to generate an SSH key:</strong></p>
-                    <p><code>ssh-keygen -t ed25519 -C "your_email@example.com"</code></p>
-                    <p style="margin-top: 10px; font-size: 14px; color: #555;">
-                        Then paste the contents of <code>~/.ssh/id_ed25519.pub</code> above.
-                    </p>
-                </div>
-            {% endif %}
-        </div>
+        <div id="result" class="result"></div>
     </div>
 
     <script>
-        document.getElementById('sshForm').addEventListener('submit', async function(e) {
+        const TIMEZONES = [
+            'UTC',
+            'America/New_York',
+            'America/Chicago',
+            'America/Denver',
+            'America/Los_Angeles',
+            'America/Anchorage',
+            'America/Sao_Paulo',
+            'America/Buenos_Aires',
+            'America/Mexico_City',
+            'America/Toronto',
+            'America/Vancouver',
+            'Europe/London',
+            'Europe/Paris',
+            'Europe/Berlin',
+            'Europe/Amsterdam',
+            'Europe/Rome',
+            'Europe/Madrid',
+            'Europe/Lisbon',
+            'Europe/Moscow',
+            'Europe/Istanbul',
+            'Asia/Dubai',
+            'Asia/Kolkata',
+            'Asia/Bangkok',
+            'Asia/Singapore',
+            'Asia/Hong_Kong',
+            'Asia/Shanghai',
+            'Asia/Tokyo',
+            'Asia/Seoul',
+            'Australia/Sydney',
+            'Australia/Melbourne',
+            'Australia/Perth',
+            'Pacific/Auckland',
+            'Pacific/Honolulu',
+        ];
+
+        const savedTimezone = '{{ profile.timezone|escapejs }}';
+        const timezoneSelect = document.getElementById('timezone');
+
+        TIMEZONES.forEach(tz => {
+            const option = document.createElement('option');
+            option.value = tz;
+            option.textContent = tz.replace(/_/g, ' ');
+            if (tz === savedTimezone) {
+                option.selected = true;
+            }
+            timezoneSelect.appendChild(option);
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const sshKey = document.getElementById('ssh_public_key').value.trim();
+            const timezone = document.getElementById('timezone').value;
             const saveButton = document.getElementById('saveButton');
             const result = document.getElementById('result');
 
@@ -224,6 +298,7 @@
             try {
                 const formData = new FormData();
                 formData.append('ssh_public_key', sshKey);
+                formData.append('timezone', timezone);
                 formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
                 const response = await fetch('{% url "profile" %}', {
