@@ -5,6 +5,7 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.conf import settings
 from django.core.cache import cache
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count
 
@@ -32,6 +33,7 @@ def require_api_token(view_func):
     return wrapped
 
 
+@ensure_csrf_cookie
 def index(request):
     context = {
         'apps': App.objects.all(),
@@ -123,6 +125,7 @@ def api_announce(request):
     return JsonResponse({'id': announcement.id, 'created_at': announcement.created_at.isoformat()}, status=201)
 
 
+@csrf_exempt
 @require_http_methods(["GET", "POST"])
 def api_chat(request):
     if request.method == 'GET':
