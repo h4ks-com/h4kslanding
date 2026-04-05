@@ -88,12 +88,26 @@
 /* projects */
 .projects-section { margin-top: 2.2rem; }
 
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
+.projects-carousel {
+  overflow-x: scroll;
+  overflow-y: hidden;
   border: 1px solid var(--border);
+  cursor: grab;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-panel);
+}
+
+.projects-carousel::-webkit-scrollbar { height: 4px; }
+.projects-carousel::-webkit-scrollbar-track { background: var(--bg-panel); }
+.projects-carousel::-webkit-scrollbar-thumb { background: var(--border); }
+.projects-carousel::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+.projects-carousel:active { cursor: grabbing; }
+
+.projects-track {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+  width: max-content;
 }
 
 .project-card {
@@ -102,9 +116,16 @@
   flex-direction: column;
   position: relative;
   cursor: pointer;
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  transition: box-shadow 0.15s;
 }
 
-.project-card:hover { background: #171b28; }
+.project-card:hover {
+  background: #171b28;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
 
 .project-card-link {
   position: absolute;
@@ -293,13 +314,13 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
 @media (max-width: 700px) {
   .container { padding: 0 1rem 3rem; }
   .top-grid { grid-template-columns: 1fr; }
-  .projects-grid { grid-template-columns: 1fr !important; }
   header { flex-direction: column; gap: 0.6rem; }
   nav { padding-top: 0; }
+  .project-card { width: 240px; }
 }
 @media (max-width: 960px) and (min-width: 701px) {
-  .projects-grid { grid-template-columns: repeat(2, 1fr); }
   .top-grid { grid-template-columns: 1fr; }
+  .project-card { width: 260px; }
 }
 {% endblock %}
 
@@ -322,27 +343,29 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
 
   <div class="projects-section">
     <div class="section-label">projects</div>
-    <div class="projects-grid">
-      {% for p in projects %}
-        <div class="project-card">
-          <a class="project-card-link" href="{{ p.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ p.name }}"></a>
-          {% if p.image %}
-            <img class="project-thumb" src="{{ p.image.url }}" alt="{{ p.name }}">
-          {% else %}
-            <div class="project-thumb-placeholder"{% if p.color %} style="border-color:{{ p.color }}"{% endif %}>
-              {{ p.name|slice:":1" }}
-            </div>
-          {% endif %}
-          <div class="project-body">
-            <div class="project-name"><a href="{{ p.url }}" target="_blank" rel="noopener noreferrer"{% if p.color %} style="color:{{ p.color }}"{% endif %}>{{ p.name }}</a></div>
-            <div class="project-desc">{{ p.description }}</div>
-            <div class="project-footer">
-              {% if p.tech_tags %}<div class="tags">{% for tag in p.tags_list %}<span class="tag">{{ tag }}</span>{% endfor %}</div>{% endif %}
-              {% if p.github_url %}<a class="project-gh" href="{{ p.github_url }}" target="_blank" rel="noopener noreferrer">github ↗</a>{% endif %}
+    <div class="projects-carousel" id="projects-carousel">
+      <div class="projects-track" id="projects-track">
+        {% for p in projects %}
+          <div class="project-card">
+            <a class="project-card-link" href="{{ p.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ p.name }}"></a>
+            {% if p.image %}
+              <img class="project-thumb" src="{{ p.image.url }}" alt="{{ p.name }}">
+            {% else %}
+              <div class="project-thumb-placeholder"{% if p.color %} style="border-color:{{ p.color }}"{% endif %}>
+                {{ p.name|slice:":1" }}
+              </div>
+            {% endif %}
+            <div class="project-body">
+              <div class="project-name"><a href="{{ p.url }}" target="_blank" rel="noopener noreferrer"{% if p.color %} style="color:{{ p.color }}"{% endif %}>{{ p.name }}</a></div>
+              <div class="project-desc">{{ p.description }}</div>
+              <div class="project-footer">
+                {% if p.tech_tags %}<div class="tags">{% for tag in p.tags_list %}<span class="tag">{{ tag }}</span>{% endfor %}</div>{% endif %}
+                {% if p.github_url %}<a class="project-gh" href="{{ p.github_url }}" target="_blank" rel="noopener noreferrer">github ↗</a>{% endif %}
+              </div>
             </div>
           </div>
-        </div>
-      {% endfor %}
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -411,18 +434,18 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
       </a>
 
     </div>
-    {% if not user.is_authenticated %}
-    <div class="community-tg" style="border-color:var(--accent2);opacity:1;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:1;color:var(--accent2)"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span>want a shell account? <a href="/sign-up/" style="color:var(--accent2)">sign up →</a></span>
-    </div>
-    {% endif %}
     <div class="community-tg">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.93 8.027l-1.96 9.243c-.145.644-.523.8-1.06.497l-2.926-2.155-1.413 1.358c-.156.156-.288.288-.59.288l.21-2.98 5.43-4.908c.236-.21-.051-.326-.365-.116L6.88 13.87l-2.883-.9c-.626-.196-.638-.626.131-.927l11.265-4.344c.522-.19.98.128.537.328z"/>
       </svg>
       <span>Telegram — we have a group, but membership is selective. Ask in <strong>#lobby</strong> if you're interested.</span>
     </div>
+    {% if not user.is_authenticated %}
+    <div class="community-tg" style="border-color:var(--accent2);background:#1f1208;color:var(--text);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent2);flex-shrink:0"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span><a href="/sign-up/" style="color:var(--accent2);font-weight:bold">sign up here</a> — get a shell account and start using beans and other community stuff</span>
+    </div>
+    {% endif %}
   </div>
 
   <footer>
@@ -609,5 +632,38 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
 
 })();
 
+// ── Projects carousel ─────────────────────────────────────────────
+(function () {
+  const carousel = document.getElementById('projects-carousel');
+  const track    = document.getElementById('projects-track');
+  if (!track) return;
+
+  const cards = Array.from(track.children);
+  if (cards.length < 2) return;
+
+  // duplicate cards for seamless loop
+  cards.forEach(function (card) { track.appendChild(card.cloneNode(true)); });
+
+  (function () {
+    let halfWidth = 0;
+    let paused    = false;
+    let lastTs    = null;
+
+    function tick(ts) {
+      if (!halfWidth) halfWidth = track.scrollWidth / 2;
+      if (halfWidth && lastTs !== null && !paused) {
+        carousel.scrollLeft += (halfWidth / Math.max(30, cards.length * 5)) * (ts - lastTs) / 1000;
+        if (carousel.scrollLeft >= halfWidth) carousel.scrollLeft -= halfWidth;
+      }
+      lastTs = ts;
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+
+    carousel.addEventListener('mouseenter', function () { paused = true; });
+    carousel.addEventListener('mouseleave', function () { paused = false; lastTs = null; });
+  }());
+})();
 </script>
 {% endblock %}
