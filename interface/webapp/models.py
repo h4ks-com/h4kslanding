@@ -75,7 +75,6 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     logto_sub = models.CharField(max_length=255, unique=True, blank=True, null=True)
-    ssh_public_key = models.TextField(blank=True, help_text="SSH public key for h4ks.com access")
     timezone = models.CharField(max_length=64, blank=True, default='', help_text="User's preferred timezone (e.g., America/New_York)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -83,8 +82,71 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s profile"
 
-    def has_ssh_key(self):
-        return bool(self.ssh_public_key.strip())
+
+class ChatLine(models.Model):
+    class Meta:
+        ordering = ['created_at']
+        verbose_name_plural = "Chat Lines"
+
+    nick = models.CharField(max_length=100)
+    message = models.TextField()
+    channel = models.CharField(max_length=100, default='#lobby')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"<{self.nick}> {self.message[:60]}"
+
+
+class Announcement(models.Model):
+    class Meta:
+        ordering = ['-pinned', '-created_at']
+        verbose_name_plural = "Announcements"
+
+    SOURCE_CHOICES = [('admin', 'Admin'), ('bot', 'Bot')]
+
+    body = models.TextField()
+    author = models.CharField(max_length=100)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='admin')
+    pinned = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.author}] {self.body[:60]}"
+
+
+class FeaturedProject(models.Model):
+    class Meta:
+        ordering = ['weight']
+        verbose_name_plural = "Featured Projects"
+
+    name = models.CharField(max_length=100)
+    url = models.CharField(max_length=500)
+    github_url = models.CharField(max_length=500, blank=True, help_text="GitHub repository URL, e.g. https://github.com/h4ks-com/CloudBot")
+    description = models.TextField()
+    tech_tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags, e.g. python, IRC, asyncio")
+    image = models.ImageField(upload_to='projects/', blank=True, null=True, help_text="Project screenshot or logo")
+    color = models.CharField(max_length=20, blank=True)
+    weight = models.IntegerField(default=0)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    def tags_list(self):
+        return [t.strip() for t in self.tech_tags.split(',') if t.strip()]
+
+
+class ApiToken(models.Model):
+    class Meta:
+        verbose_name_plural = "API Tokens"
+
+    name = models.CharField(max_length=100)
+    token_hash = models.CharField(max_length=64, db_index=True, help_text="SHA-256 hash of the raw token")
+    created_at = models.DateTimeField(auto_now_add=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
 
 
 @receiver(post_save, sender=User)

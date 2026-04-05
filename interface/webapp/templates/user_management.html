@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}user management — h4ks.com{% endblock %}
+
+{% block extra_css %}
+:root { --container-max: 860px; }
+
+body { padding-bottom: 4rem; }
+
+.topnav {
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+}
+
+.topnav a {
+  color: var(--text-mid);
+  padding: 0.2rem 0.65rem;
+  border: 1px solid transparent;
+}
+
+.topnav a:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--bg-panel);
+  text-decoration: none;
+}
+
+.topnav .sep { color: var(--border); padding: 0 0.15rem; }
+.topnav .who { color: var(--text-dim); padding: 0.2rem 0.65rem; }
+
+.page-title {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+}
+
+.form-group { margin-bottom: 1.2rem; }
+
+label {
+  display: block;
+  font-size: 0.83rem;
+  color: var(--text-mid);
+  margin-bottom: 0.4rem;
+  font-family: 'Courier New', monospace;
+}
+
+input[type="email"], input[type="text"] {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  box-sizing: border-box;
+}
+input[type="email"]:focus, input[type="text"]:focus { border-color: var(--accent); }
+
+button[type="submit"], .btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 0.6rem 1.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+button[type="submit"]:hover, .btn-primary:hover { background: #4a90d0; }
+button[type="submit"]:disabled, .btn-primary:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+.result {
+  margin-top: 1.2rem;
+  padding: 0.8rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.83rem;
+  display: none;
+}
+.result.success { border: 1px solid var(--accent);  color: var(--accent);  background: #0d1f1e; }
+.result.error   { border: 1px solid var(--accent2); color: var(--accent2); background: #1f1808; }
+
+.generated-url {
+  word-break: break-all;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.7rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--text-mid);
+}
+
+.copy-btn {
+  margin-top: 0.7rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.4rem 1.2rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+.copy-btn:hover { background: var(--bg-panel); }
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.5rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* ── user management section ───────────────────────────────────────── */
+.um-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.um-search {
+  flex: 1;
+  min-width: 160px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  outline: none;
+}
+.um-search:focus { border-color: var(--accent); }
+
+.um-total {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* batch bar */
+.batch-bar {
+  display: none;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  margin-bottom: 0.8rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+.batch-bar.visible { display: flex; }
+
+.batch-count { color: var(--text-dim); }
+
+.batch-plan-select {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.3rem 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.btn-batch-apply {
+  background: var(--accent2);
+  color: var(--bg);
+  border: none;
+  padding: 0.35rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+.btn-batch-apply:hover { opacity: 0.85; }
+.btn-batch-apply:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-batch-clear {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.8rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.btn-batch-clear:hover { color: var(--text); border-color: var(--text-dim); }
+
+/* user table */
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+}
+
+.user-table th {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  font-weight: normal;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.user-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.user-table tr:last-child td { border-bottom: none; }
+
+.user-table input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.user-email { color: var(--text-dim); font-size: 0.78rem; }
+
+.plan-select {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.25rem 0.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+}
+.plan-select:focus { border-color: var(--accent); }
+.plan-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.joined-date { color: var(--text-dim); font-size: 0.75rem; white-space: nowrap; }
+
+.um-empty {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-dim);
+  font-family: 'Courier New', monospace;
+  font-size: 0.83rem;
+}
+
+.btn-load-more {
+  margin-top: 1rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.5rem 1.4rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.83rem;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+}
+.btn-load-more:hover { background: var(--bg-panel); }
+.btn-load-more:disabled { border-color: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+.um-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+{% endblock %}
+
+{% block content %}
+  <div class="topnav">
+    <a href="/">h4ks.com</a>
+    <span class="sep">|</span>
+    <a href="/admin/">admin</a>
+    <span class="sep">|</span>
+    <a href="/profile/">profile</a>
+    <span class="sep">|</span>
+    <span class="who">{{ user.username }}</span>
+  </div>
+
+  <div class="page-title">user management</div>
+
+  <!-- ── generate signup url ───────────────────────────────────────── -->
+  <div class="section-label">generate signup url</div>
+
+  <form id="signupForm">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="signup-email">email address</label>
+      <input type="email" id="signup-email" name="email" required placeholder="user@h4ks.com" autocomplete="email">
+    </div>
+    <button type="submit" id="signupButton">generate signup url</button>
+  </form>
+
+  <div id="signup-result" class="result"></div>
+
+  <!-- ── user management ───────────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:2.5rem;">users</div>
+
+  <div class="um-controls">
+    <input type="text" class="um-search" id="um-search" placeholder="search by name, email or username…">
+    <span class="um-total" id="um-total"></span>
+  </div>
+
+  <div class="batch-bar" id="batch-bar">
+    <span class="batch-count" id="batch-count">0 selected</span>
+    <select class="batch-plan-select" id="batch-plan-select">
+      {% for key, plan in plans.items %}
+        <option value="{{ key }}">{{ plan.display }} — {{ plan.description }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn-batch-apply" id="batch-apply">apply</button>
+    <button class="btn-batch-clear" id="batch-clear">clear</button>
+  </div>
+
+  <table class="user-table" id="user-table">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="select-all" title="select all"></th>
+        <th>user</th>
+        <th>username</th>
+        <th>plan</th>
+        <th>joined</th>
+      </tr>
+    </thead>
+    <tbody id="user-tbody"></tbody>
+  </table>
+
+  <div id="um-empty" class="um-empty" style="display:none;">no users found</div>
+  <button class="btn-load-more" id="btn-load-more" style="display:none;">load more</button>
+
+  <div id="toast" class="toast">✓ copied</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── signup url ────────────────────────────────────────────────────────
+document.getElementById('signupForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+
+  const email  = document.getElementById('signup-email').value;
+  const btn    = document.getElementById('signupButton');
+  const result = document.getElementById('signup-result');
+
+  btn.disabled = true;
+  result.style.display = 'none';
+
+  try {
+    const fd = new FormData();
+    fd.append('email', email);
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    const data = await fetch('{% url "generate_signup_url" %}', { method: 'POST', body: fd }).then(r => r.json());
+
+    if (data.success || data.signup_url) {
+      result.className = 'result success';
+      result.innerHTML =
+        (data.message ? '<div style="margin-bottom:0.5rem;opacity:0.8">' + data.message + '</div>' : '') +
+        '<div>email: <strong>' + data.email + '</strong></div>' +
+        '<div class="generated-url" id="signupUrl">' + data.signup_url + '</div>' +
+        '<button class="copy-btn" onclick="copyUrl()">copy url</button>';
+    } else {
+      throw new Error(data.error || 'unknown error');
+    }
+  } catch (err) {
+    result.className = 'result error';
+    result.textContent = '✗ ' + err.message;
+  } finally {
+    result.style.display = 'block';
+    btn.disabled = false;
+  }
+});
+
+function copyUrl() {
+  const url   = document.getElementById('signupUrl').textContent;
+  const toast = document.getElementById('toast');
+  navigator.clipboard.writeText(url).then(function () {
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
+  });
+}
+
+// ── user management ───────────────────────────────────────────────────
+const PLANS = {{ plans_json|safe }};
+const PLAN_KEYS = Object.keys(PLANS);
+
+const tbody      = document.getElementById('user-tbody');
+const umEmpty    = document.getElementById('um-empty');
+const umTotal    = document.getElementById('um-total');
+const loadMoreBtn = document.getElementById('btn-load-more');
+const selectAll  = document.getElementById('select-all');
+const batchBar   = document.getElementById('batch-bar');
+const batchCount = document.getElementById('batch-count');
+const batchApply = document.getElementById('batch-apply');
+const batchClear = document.getElementById('batch-clear');
+const batchPlanSel = document.getElementById('batch-plan-select');
+
+let currentPage = 1;
+let currentSearch = '';
+let totalUsers = 0;
+let loadedCount = 0;
+const PAGE_SIZE = 10;
+
+function csrfToken() {
+  return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function planOptions(currentPlan) {
+  return PLAN_KEYS.map(key =>
+    `<option value="${key}"${key === currentPlan ? ' selected' : ''}>${PLANS[key].display}</option>`
+  ).join('');
+}
+
+function buildRow(u) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = u.id;
+  tr.innerHTML = `
+    <td><input type="checkbox" class="row-cb" data-id="${u.id}"></td>
+    <td>
+      <div>${u.name || u.username || u.id}</div>
+      <div class="user-email">${u.primaryEmail || ''}</div>
+    </td>
+    <td>${u.username || ''}</td>
+    <td>
+      <select class="plan-select" data-id="${u.id}">
+        ${planOptions(u.plan)}
+      </select>
+    </td>
+    <td class="joined-date">${fmtDate(u.createdAt)}</td>
+  `;
+
+  tr.querySelector('.plan-select').addEventListener('change', async function () {
+    const sel = this;
+    const logtoId = sel.dataset.id;
+    const plan = sel.value;
+    sel.disabled = true;
+    const spinner = document.createElement('span');
+    spinner.className = 'um-spinner';
+    sel.after(spinner);
+
+    try {
+      const resp = await fetch(`/api/admin/users/${logtoId}/set-plan/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || 'failed');
+    } catch (err) {
+      alert('Error setting plan: ' + err.message);
+    } finally {
+      sel.disabled = false;
+      spinner.remove();
+    }
+  });
+
+  tr.querySelector('.row-cb').addEventListener('change', updateBatchBar);
+  return tr;
+}
+
+function updateBatchBar() {
+  const checked = Array.from(tbody.querySelectorAll('.row-cb:checked'));
+  const n = checked.length;
+  if (n > 0) {
+    batchBar.classList.add('visible');
+    batchCount.textContent = n + ' selected';
+    selectAll.indeterminate = n > 0 && n < tbody.querySelectorAll('.row-cb').length;
+    selectAll.checked = n === tbody.querySelectorAll('.row-cb').length;
+  } else {
+    batchBar.classList.remove('visible');
+    selectAll.indeterminate = false;
+    selectAll.checked = false;
+  }
+}
+
+selectAll.addEventListener('change', function () {
+  tbody.querySelectorAll('.row-cb').forEach(cb => { cb.checked = this.checked; });
+  updateBatchBar();
+});
+
+batchClear.addEventListener('click', function () {
+  tbody.querySelectorAll('.row-cb').forEach(cb => { cb.checked = false; });
+  selectAll.checked = false;
+  batchBar.classList.remove('visible');
+});
+
+batchApply.addEventListener('click', async function () {
+  const plan = batchPlanSel.value;
+  const ids = Array.from(tbody.querySelectorAll('.row-cb:checked')).map(cb => cb.dataset.id);
+  if (!ids.length) return;
+
+  batchApply.disabled = true;
+  try {
+    const resp = await fetch('/api/admin/batch-set-plan/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+      body: JSON.stringify({ user_ids: ids, plan }),
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'failed');
+    // refresh table to reflect new plans
+    currentPage = 1;
+    loadedCount = 0;
+    tbody.innerHTML = '';
+    await loadUsers(false);
+  } catch (err) {
+    alert('Batch error: ' + err.message);
+  } finally {
+    batchApply.disabled = false;
+  }
+});
+
+async function loadUsers(append) {
+  loadMoreBtn.disabled = true;
+  try {
+    const params = new URLSearchParams({ page: currentPage, page_size: PAGE_SIZE });
+    if (currentSearch) params.set('search', currentSearch);
+
+    const resp = await fetch('/api/admin/users/?' + params.toString());
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    totalUsers = data.total;
+    umTotal.textContent = totalUsers + ' total';
+
+    if (!append) {
+      tbody.innerHTML = '';
+      loadedCount = 0;
+    }
+
+    for (const user of data.users) {
+      tbody.appendChild(buildRow(user));
+    }
+    loadedCount += data.users.length;
+
+    umEmpty.style.display = loadedCount === 0 ? 'block' : 'none';
+    loadMoreBtn.style.display = loadedCount < totalUsers ? 'block' : 'none';
+  } catch (err) {
+    umEmpty.textContent = 'Error loading users: ' + err.message;
+    umEmpty.style.display = 'block';
+  } finally {
+    loadMoreBtn.disabled = false;
+  }
+}
+
+loadMoreBtn.addEventListener('click', function () {
+  currentPage++;
+  loadUsers(true);
+});
+
+let searchTimer = null;
+document.getElementById('um-search').addEventListener('input', function () {
+  clearTimeout(searchTimer);
+  const val = this.value.trim();
+  searchTimer = setTimeout(function () {
+    currentSearch = val;
+    currentPage = 1;
+    loadedCount = 0;
+    loadUsers(false);
+  }, 300);
+});
+
+// initial load
+loadUsers(false);
+</script>
+{% endblock %}

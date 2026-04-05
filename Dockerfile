@@ -21,7 +21,7 @@ RUN uv sync --frozen --no-dev
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-RUN mkdir -p /interface/static /interface/data
+RUN mkdir -p /interface/static /interface/data /interface/media
 
 EXPOSE 20000
 

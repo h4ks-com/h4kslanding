@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Location, App, PendingUser, UserProfile
+from .models import Location, App, PendingUser, UserProfile, Announcement, FeaturedProject, ApiToken, ChatLine
 
 admin.site.site_header = "h4ks Admin"
 admin.site.site_title = "h4ks Admin"
@@ -33,19 +33,14 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = 'Profile'
-    fields = ('logto_sub', 'ssh_public_key', 'created_at', 'updated_at')
+    fields = ('logto_sub', 'timezone', 'created_at', 'updated_at')
     readonly_fields = ('logto_sub', 'created_at', 'updated_at')
 
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'has_ssh_key')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     actions = ['promote_to_admin']
-
-    def has_ssh_key(self, obj):
-        return obj.profile.has_ssh_key() if hasattr(obj, 'profile') else False
-    has_ssh_key.boolean = True
-    has_ssh_key.short_description = 'SSH Key'
 
     def promote_to_admin(self, request, queryset):
         if not request.user.has_perm('webapp.can_manage_users') and not request.user.is_superuser:
@@ -58,3 +53,42 @@ class CustomUserAdmin(BaseUserAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('author', 'source', 'pinned', 'created_at', 'short_body')
+    list_filter = ('pinned', 'source', 'created_at')
+    search_fields = ('body', 'author')
+    readonly_fields = ('created_at',)
+
+    def short_body(self, obj):
+        return obj.body[:80]
+    short_body.short_description = 'Body'
+
+
+@admin.register(FeaturedProject)
+class FeaturedProjectAdmin(admin.ModelAdmin):
+    list_display = ('name', 'active', 'weight', 'url', 'github_url', 'tech_tags')
+    list_filter = ('active',)
+    search_fields = ('name', 'description')
+
+
+@admin.register(ApiToken)
+class ApiTokenAdmin(admin.ModelAdmin):
+    list_display = ('name', 'active', 'created_at')
+    list_filter = ('active',)
+    readonly_fields = ('token_hash', 'created_at')
+    fields = ('name', 'active', 'token_hash', 'created_at')
+
+
+@admin.register(ChatLine)
+class ChatLineAdmin(admin.ModelAdmin):
+    list_display = ('nick', 'channel', 'created_at', 'short_message')
+    list_filter = ('channel', 'created_at')
+    search_fields = ('nick', 'message')
+    readonly_fields = ('created_at',)
+
+    def short_message(self, obj):
+        return obj.message[:80]
+    short_message.short_description = 'Message'

@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}h4ks.com{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+<style>
+:root {
+  --bg:            #11131c;
+  --bg-panel:      #191d2a;
+  --border:        #2e3550;
+  --text:          #f0f4ff;
+  --text-dim:      #7b8ab0;
+  --text-mid:      #b0bfe0;
+  --accent:        #5c9eff;
+  --accent2:       #ff8c4b;
+  --code-bg:       #11131c;
+  --tag-bg:        #1d2238;
+  --container-max: 1280px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  border-top: 2px solid var(--accent);
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+
+.section-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: var(--text-mid);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding-bottom: 0.25rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* shared nav header — used by index and clocks */
+header {
+  padding: 1.8rem 0 1.4rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.site-title {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+}
+.site-title:hover { text-decoration: none; opacity: 0.8; }
+
+.site-tagline {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+  font-family: 'Courier New', monospace;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  align-items: center;
+  padding-top: 0.2rem;
+}
+
+nav a {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: var(--text-mid);
+  padding: 0.2rem 0.65rem;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+nav a:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--bg-panel);
+  text-decoration: none;
+}
+
+{% block extra_css %}{% endblock %}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="container">
+{% block content %}{% endblock %}
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

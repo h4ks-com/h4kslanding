@@ -1,75 +1,613 @@
+{% extends "base.html" %}
 {% load static %}
-<html>
-<head>
-<title>h4ks</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
+{% block title %}h4ks.com{% endblock %}
 
-<body onload="startTime()">
-<script>
-const options = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-function startTime() {
-{% for location in locations %}
-  today = new Date();
-  zonetime = today.toLocaleString('en-GB', { timeZone: '{{ location.zone }}',...options}).replace(/\,/g,"")
-  document.getElementById('{{ location.id }}').innerHTML =  zonetime;
-{% endfor %}
-  setTimeout(startTime, 1000);
+{% block extra_css %}
+/* top layout */
+.top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2.2rem;
 }
 
+/* announcements */
+.announce-list {
+  list-style: none;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.announce-entry {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.announce-entry:last-child { border-bottom: none; }
+
+.announce-meta {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 0.2rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.announce-pin { color: var(--accent2); }
+.announce-nick.admin { color: var(--accent); }
+.announce-nick.bot   { color: var(--accent2); }
+
+.announce-body {
+  font-size: 0.93rem;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+/* chat */
+.chat-window {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent2);
+  padding: 0.75rem 0.9rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.84rem;
+  height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg-panel);
+}
+
+.chat-window::-webkit-scrollbar { width: 4px; }
+.chat-window::-webkit-scrollbar-track { background: var(--bg-panel); }
+.chat-window::-webkit-scrollbar-thumb { background: var(--border); }
+.chat-window::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+.chat-line {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.12rem 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.chat-ts   { color: var(--text-dim); font-size: 0.76rem; flex-shrink: 0; }
+.chat-nick { font-weight: bold; flex-shrink: 0; white-space: nowrap; }
+.chat-msg  { color: var(--text-mid); word-break: break-word; }
+
+.chat-sep {
+  text-align: center;
+  color: var(--border);
+  font-size: 0.7rem;
+  padding: 0.5rem 0 0.3rem;
+  user-select: none;
+  letter-spacing: 0.05em;
+}
+
+/* projects */
+.projects-section { margin-top: 2.2rem; }
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.project-card {
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+}
+
+.project-card:hover { background: #171b28; }
+
+.project-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.project-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.project-thumb-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--code-bg);
+  border-bottom: 3px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  color: var(--border);
+}
+
+.project-body { padding: 0.9rem 1rem; flex: 1; display: flex; flex-direction: column; }
+
+.project-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.92rem;
+  font-weight: bold;
+  margin-bottom: 0.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+.project-desc {
+  font-size: 0.83rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+  flex: 1;
+  margin-bottom: 0.6rem;
+}
+
+.project-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.project-gh {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.project-gh:hover { color: var(--accent); text-decoration: none; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+
+.tag {
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.4rem;
+}
+
+/* community / join section */
+.community-section { margin-top: 2.2rem; }
+
+.community-intro {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  margin-bottom: 1.2rem;
+  font-family: 'Courier New', monospace;
+}
+
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.community-card {
+  background: var(--bg-panel);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  border-left: 3px solid var(--card-color, var(--border));
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+a.community-card:hover { background: #1a1f30; text-decoration: none; }
+
+.community-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: var(--card-color, var(--text-dim));
+  margin-top: 0.1rem;
+}
+
+.community-icon svg { width: 100%; height: 100%; }
+
+.community-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--card-color, var(--text));
+  margin-bottom: 0.3rem;
+}
+
+.community-desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 0.45rem;
+}
+
+.community-link {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--card-color, var(--accent));
+}
+
+.community-cmd {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: var(--text-mid);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.6rem;
+  display: inline-block;
+  margin-top: 0.1rem;
+}
+
+.community-irc {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+
+.community-irc strong { color: var(--text-mid); }
+
+.community-tg {
+  margin-top: 1px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-left: 3px solid var(--border);
+  padding: 0.7rem 1.1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.community-tg svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.5; }
+
+@media (max-width: 700px) {
+  .community-grid { grid-template-columns: 1fr; }
+}
+
+/* responsive */
+@media (max-width: 700px) {
+  .container { padding: 0 1rem 3rem; }
+  .top-grid { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: 1fr !important; }
+  header { flex-direction: column; gap: 0.6rem; }
+  nav { padding-top: 0; }
+}
+@media (max-width: 960px) and (min-width: 701px) {
+  .projects-grid { grid-template-columns: repeat(2, 1fr); }
+  .top-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+  {% include "partials/nav.html" %}
+
+  <div class="top-grid">
+
+    <div>
+      <div class="section-label">announcements</div>
+      <ul class="announce-list" id="announce-list"></ul>
+    </div>
+
+    <div>
+      <div class="section-label">chat snip · <a href="https://chat.h4ks.com" style="font-size:0.9em;letter-spacing:0">#lobby</a></div>
+      <div class="chat-window" id="chat-window"></div>
+    </div>
+
+  </div>
+
+  <div class="projects-section">
+    <div class="section-label">projects</div>
+    <div class="projects-grid">
+      {% for p in projects %}
+        <div class="project-card">
+          <a class="project-card-link" href="{{ p.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ p.name }}"></a>
+          {% if p.image %}
+            <img class="project-thumb" src="{{ p.image.url }}" alt="{{ p.name }}">
+          {% else %}
+            <div class="project-thumb-placeholder"{% if p.color %} style="border-color:{{ p.color }}"{% endif %}>
+              {{ p.name|slice:":1" }}
+            </div>
+          {% endif %}
+          <div class="project-body">
+            <div class="project-name"><a href="{{ p.url }}" target="_blank" rel="noopener noreferrer"{% if p.color %} style="color:{{ p.color }}"{% endif %}>{{ p.name }}</a></div>
+            <div class="project-desc">{{ p.description }}</div>
+            <div class="project-footer">
+              {% if p.tech_tags %}<div class="tags">{% for tag in p.tags_list %}<span class="tag">{{ tag }}</span>{% endfor %}</div>{% endif %}
+              {% if p.github_url %}<a class="project-gh" href="{{ p.github_url }}" target="_blank" rel="noopener noreferrer">github ↗</a>{% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="community-section">
+    <div class="section-label">come join us, we don't bite</div>
+    <p class="community-intro">Pick your preferred way in and say hi in <strong>#lobby</strong>.</p>
+    <div class="community-grid">
+
+      <a href="https://chat.h4ks.com" target="_blank" rel="noopener noreferrer" class="community-card" style="--card-color:#5c9eff">
+        <div class="community-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="community-name">Web Chat</div>
+          <div class="community-desc">Open your browser and you're in. No client install needed.</div>
+          <div class="community-link">chat.h4ks.com ↗</div>
+        </div>
+      </a>
+
+      <a href="https://discord.gg/AwdabRxtzG" target="_blank" rel="noopener noreferrer" class="community-card" style="--card-color:#5865f2">
+        <div class="community-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.077.077 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="community-name">Discord</div>
+          <div class="community-desc">Prefer Discord? We're there too, bridged to IRC so you can talk to everyone.</div>
+          <div class="community-link">discord.gg/AwdabRxtzG ↗</div>
+        </div>
+      </a>
+
+      <div class="community-card" style="--card-color:#ff8c4b">
+        <div class="community-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"/>
+            <line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+        </div>
+        <div>
+          <div class="community-name">SSH Chat</div>
+          <div class="community-desc">Got a terminal? You're already set. No client, no account required.</div>
+          <div class="community-cmd">$ ssh h4ks.com</div>
+        </div>
+      </div>
+
+      <a href="ircs://irc.h4ks.com:6697/#lobby" class="community-card" style="--card-color:#4ade80">
+        <div class="community-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/>
+            <line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
+        </div>
+        <div>
+          <div class="community-name">IRC Client</div>
+          <div class="community-desc">Use your own client — WeeChat, irssi, HexChat, whatever you like.</div>
+          <div class="community-irc">
+            <strong>server</strong> &nbsp;irc.h4ks.com:6697 (TLS)<br>
+            <strong>channel</strong> #lobby
+          </div>
+        </div>
+      </a>
+
+    </div>
+    {% if not user.is_authenticated %}
+    <div class="community-tg" style="border-color:var(--accent2);opacity:1;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:1;color:var(--accent2)"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>want a shell account? <a href="/sign-up/" style="color:var(--accent2)">sign up →</a></span>
+    </div>
+    {% endif %}
+    <div class="community-tg">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.93 8.027l-1.96 9.243c-.145.644-.523.8-1.06.497l-2.926-2.155-1.413 1.358c-.156.156-.288.288-.59.288l.21-2.98 5.43-4.908c.236-.21-.051-.326-.365-.116L6.88 13.87l-2.883-.9c-.626-.196-.638-.626.131-.927l11.265-4.344c.522-.19.98.128.537.328z"/>
+      </svg>
+      <span>Telegram — we have a group, but membership is selective. Ask in <strong>#lobby</strong> if you're interested.</span>
+    </div>
+  </div>
+
+  <footer>
+    <span>h4ks.com</span>
+    <span>{% now "Y" %}</span>
+  </footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // ── nick → deterministic colour ──────────────────────────────────
+  const NICK_COLORS = ['#58a6a0','#d29922','#a371f7','#e05c5c','#4a9eff','#79c0ff'];
+  function nickColor(nick) {
+    let h = 0;
+    for (let i = 0; i < nick.length; i++) h = (h * 31 + nick.charCodeAt(i)) >>> 0;
+    return NICK_COLORS[h % NICK_COLORS.length];
+  }
+
+  // ── Chat ─────────────────────────────────────────────────────────
+  const chatWin = document.getElementById('chat-window');
+  let chatOldestId = null;
+  let chatHasMore  = true;
+  let chatLoading  = false;
+  let chatLastDay  = null;
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+  }
+  function fmtTime(iso) {
+    return new Date(iso).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function buildChatFrag(lines, prepend) {
+    const frag = document.createDocumentFragment();
+    // when prepending we compute day from the lines themselves, not the current tail
+    let localLastDay = prepend ? null : chatLastDay;
+
+    for (const line of lines) {
+      const day = fmtDate(line.created_at);
+      if (day !== localLastDay) {
+        const sep = document.createElement('div');
+        sep.className = 'chat-sep';
+        sep.textContent = '── ' + day + ' ──';
+        frag.appendChild(sep);
+        localLastDay = day;
+      }
+
+      const el   = document.createElement('div');
+      el.className = 'chat-line';
+
+      const ts   = document.createElement('span');
+      ts.className = 'chat-ts';
+      ts.textContent = fmtTime(line.created_at);
+
+      const nick = document.createElement('span');
+      nick.className = 'chat-nick';
+      nick.textContent = '<' + line.nick + '>';
+      nick.style.color = nickColor(line.nick);
+
+      const msg  = document.createElement('span');
+      msg.className = 'chat-msg';
+      msg.textContent = line.message;
+
+      el.appendChild(ts); el.appendChild(nick); el.appendChild(msg);
+      frag.appendChild(el);
+    }
+
+    if (!prepend && lines.length) chatLastDay = localLastDay;
+    return frag;
+  }
+
+  async function loadChat(prepend) {
+    if (chatLoading) return;
+    if (prepend && !chatHasMore) return;
+    chatLoading = true;
+
+    const url = (prepend && chatOldestId)
+      ? '/api/chat/?limit=50&before=' + chatOldestId
+      : '/api/chat/?limit=50';
+
+    try {
+      const data = await fetch(url).then(r => r.json());
+
+      if (prepend) {
+        const oldH = chatWin.scrollHeight;
+        const oldTop = chatWin.scrollTop;
+        chatWin.insertBefore(buildChatFrag(data.lines, true), chatWin.firstChild);
+        // restore scroll so the view doesn't jump
+        chatWin.scrollTop = oldTop + (chatWin.scrollHeight - oldH);
+      } else {
+        chatWin.innerHTML = '';
+        chatLastDay = null;
+        chatWin.appendChild(buildChatFrag(data.lines, false));
+        chatWin.scrollTop = chatWin.scrollHeight;
+      }
+
+      if (data.oldest_id !== null && (chatOldestId === null || data.oldest_id < chatOldestId)) {
+        chatOldestId = data.oldest_id;
+      }
+      chatHasMore = data.has_more;
+    } catch (e) {
+      console.error('chat load error:', e);
+    } finally {
+      chatLoading = false;
+    }
+  }
+
+  chatWin.addEventListener('scroll', function () {
+    if (chatWin.scrollTop < 60 && chatHasMore && !chatLoading) loadChat(true);
+  });
+
+  loadChat(false);
+
+  // ── Announcements ─────────────────────────────────────────────────
+  const announceList = document.getElementById('announce-list');
+  let announceOffset  = 0;
+  let announceHasMore = true;
+  let announceLoading = false;
+
+  function buildAnnouncement(a) {
+    const li = document.createElement('li');
+    li.className = 'announce-entry';
+
+    const meta = document.createElement('div');
+    meta.className = 'announce-meta';
+
+    if (a.pinned) {
+      const pin = document.createElement('span');
+      pin.className = 'announce-pin';
+      pin.textContent = '▶ pinned \u00a0';
+      meta.appendChild(pin);
+    }
+
+    const nick = document.createElement('span');
+    nick.className = 'announce-nick ' + a.source;
+    nick.textContent = '<' + a.author + '>';
+    meta.appendChild(nick);
+
+    const dateEl = document.createElement('span');
+    const d = new Date(a.created_at);
+    dateEl.textContent = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'})
+      + ' ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+    meta.appendChild(dateEl);
+
+    const body = document.createElement('div');
+    body.className = 'announce-body';
+    body.textContent = a.body;
+
+    li.appendChild(meta);
+    li.appendChild(body);
+    return li;
+  }
+
+  // sentinel triggers load when it scrolls into view inside the list
+  const sentinel = document.createElement('li');
+  sentinel.style.cssText = 'height:1px;list-style:none;';
+  announceList.appendChild(sentinel);
+
+  async function loadAnnouncements() {
+    if (announceLoading || !announceHasMore) return;
+    announceLoading = true;
+
+    try {
+      const data = await fetch('/api/announce/?limit=20&offset=' + announceOffset).then(r => r.json());
+
+      for (const a of data.announcements) {
+        announceList.insertBefore(buildAnnouncement(a), sentinel);
+      }
+
+      announceOffset  = data.next_offset;
+      announceHasMore = data.has_more;
+      if (!announceHasMore) sentinel.remove();
+    } catch (e) {
+      console.error('announce load error:', e);
+    } finally {
+      announceLoading = false;
+    }
+  }
+
+  new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting) loadAnnouncements();
+  }, { root: announceList, rootMargin: '80px' }).observe(sentinel);
+
+})();
+
 </script>
-<style>
-body {
-	            font-family: Arial, sans-serif;
-	            background-color: #f9f9f9;
-	            color: #333;
-	            margin: 0;
-	            padding: 20px;
-	        }
-	        h1, h2 {
-	            color: #4A90E2;
-	        }
-	        ul {
-	            list-style-type: none;
-	            padding: 0;
-	        }
-	        a {
-	            text-decoration: none;
-	            color: #4A90E2;
-	            margin: 10px;
-	        }
-	        footer {
-	            text-align: center;
-	            padding: 20px;
-	            background-color: #f1f1f1;
-	        }
-	        .location {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 2px;
-		}
-                .monospace {
-		font-family: monospace;
-		}
-</style>
-<h1 style="text-align: center;">Welcome to h4ks.com</h1>
-<p style="font-size: 1.5em; text-align: center;">Server Time:<br><strong>{% now "d M Y H:i:s" %}</strong></p>
-<div style="display: flex; flex-wrap: wrap; justify-content: center;">
-{% for app in apps %}
- <a href="{{ app.location }}" {% if app.color %} style="color: {{app.color}}" {% endif %}>{{ app.name }}</a>
-{% endfor %}
-</div>
-<ul style="text-align: center;">
-{% for location in locations %}
-<li>
-<div class="location">
-<strong {% if location.color %} style="color: {{ location.color }}" {% endif %} class="monospace">{{ location.name }}</strong><br>
-<em id="{{ location.id }}"></em>
-</div>
-</li>
-{% endfor %}
-</ul>
-</body>
-</html>
+{% endblock %}

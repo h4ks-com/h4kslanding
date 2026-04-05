@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}clocks — h4ks.com{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+{% endblock %}
+
+{% block extra_css %}
+/* your-time hero */
+.your-time-section { margin-top: 2.2rem; }
+
+.your-time-hero {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 1.2rem 1.4rem;
+}
+
+.your-tz-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.your-tz-time {
+  font-family: 'Courier New', monospace;
+  font-size: 2.8rem;
+  color: var(--accent);
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.your-tz-date {
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  margin-top: 0.2rem;
+}
+
+.your-tz-hint {
+  margin-top: 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* world clocks grid */
+.clocks-section { margin-top: 2.2rem; }
+
+.clocks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0 2.5rem;
+}
+
+.clock-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.clock-name { font-family: 'Courier New', monospace; font-weight: bold; }
+.clock-time {
+  font-family: 'Courier New', monospace;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+/* map */
+.map-section { margin-top: 2.2rem; }
+
+#tz-map {
+  height: 440px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.map-note {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+/* leaflet overrides for dark theme */
+.leaflet-container { background: #0d0f18 !important; }
+.leaflet-control-attribution { background: rgba(17,19,28,0.85) !important; color: var(--text-dim) !important; }
+.leaflet-control-attribution a { color: var(--text-dim) !important; }
+.leaflet-control-zoom a {
+  background: var(--bg-panel) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-zoom a:hover { color: var(--accent) !important; }
+
+@media (max-width: 700px) {
+  .container { padding: 0 1rem 3rem; }
+  header { flex-direction: column; gap: 0.6rem; }
+  nav { padding-top: 0; }
+  .your-tz-time { font-size: 2rem; }
+  #tz-map { height: 280px; }
+}
+{% endblock %}
+
+{% block content %}
+  {% include "partials/nav.html" %}
+
+  <!-- your time -->
+  <div class="your-time-section">
+    <div class="section-label">your time</div>
+    <div class="your-time-hero">
+      <div class="your-tz-label" id="your-tz-label">{{ user_timezone|default:"" }}</div>
+      <div class="your-tz-time" id="your-time-display">--:--:--</div>
+      <div class="your-tz-date" id="your-date-display"></div>
+      {% if not user.is_authenticated %}
+        <div class="your-tz-hint"><a href="/oidc/authenticate/">login</a> to set your timezone</div>
+      {% elif not user_timezone %}
+        <div class="your-tz-hint" id="tz-hint"><a href="/profile/">save your timezone in profile</a> to make it permanent</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- world clocks -->
+  {% if locations %}
+  <div class="clocks-section">
+    <div class="section-label">world clocks</div>
+    <div class="clocks-grid">
+      {% for location in locations %}
+        <div class="clock-entry" data-zone="{{ location.zone }}">
+          <span class="clock-name"{% if location.color %} style="color:{{ location.color }}"{% endif %}>{{ location.name }}</span>
+          <span class="clock-time" id="loc-{{ location.id }}">--:--:--</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- map -->
+  <div class="map-section">
+    <div class="section-label">where we are</div>
+    <div id="tz-map"></div>
+    <div class="map-note" id="map-note"></div>
+  </div>
+
+  <footer>
+    <span>h4ks.com</span>
+    <span>{% now "Y" %}</span>
+  </footer>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  // profile timezone takes priority; fall back to browser-detected timezone
+  const YOUR_TZ = '{{ user_timezone|escapejs }}' || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const tzLabel = document.getElementById('your-tz-label');
+  if (tzLabel) tzLabel.textContent = YOUR_TZ.replace(/_/g, ' ');
+
+  // ── Clocks (seconds precision) ────────────────────────────────────
+  const yourTimeEl = document.getElementById('your-time-display');
+  const yourDateEl = document.getElementById('your-date-display');
+  const clockEntries = document.querySelectorAll('.clock-entry[data-zone]');
+
+  function tick() {
+    const now = new Date();
+
+    yourTimeEl.textContent = now.toLocaleTimeString('en-GB', {
+      timeZone: YOUR_TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    yourDateEl.textContent = now.toLocaleDateString('en-GB', {
+      timeZone: YOUR_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    clockEntries.forEach(function (entry) {
+      const zone = entry.dataset.zone;
+      const el   = entry.querySelector('.clock-time');
+      if (el) el.textContent = now.toLocaleTimeString('en-GB', {
+        timeZone: zone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      });
+    });
+
+    // sync to the next second boundary for smooth updates
+    setTimeout(tick, 1000 - now.getMilliseconds());
+  }
+  tick();
+
+  // ── Leaflet map ───────────────────────────────────────────────────
+  const TIMEZONE_COORDS = {
+    'UTC':                    [20, 0],
+    'America/New_York':       [40.7, -74.0],
+    'America/Chicago':        [41.8, -87.6],
+    'America/Denver':         [39.7, -104.9],
+    'America/Los_Angeles':    [34.0, -118.2],
+    'America/Anchorage':      [61.2, -149.9],
+    'America/Sao_Paulo':      [-23.5, -46.6],
+    'America/Buenos_Aires':   [-34.6, -58.4],
+    'America/Mexico_City':    [19.4, -99.1],
+    'America/Toronto':        [43.6, -79.4],
+    'America/Vancouver':      [49.2, -123.1],
+    'America/Halifax':        [44.6, -63.6],
+    'America/Bogota':         [4.7, -74.1],
+    'America/Lima':           [-12.0, -77.0],
+    'America/Santiago':       [-33.4, -70.7],
+    'America/Caracas':        [10.5, -66.9],
+    'America/Phoenix':        [33.4, -112.1],
+    'America/Winnipeg':       [49.9, -97.1],
+    'America/Edmonton':       [53.5, -113.5],
+    'America/Regina':         [50.4, -104.6],
+    'America/Puerto_Rico':    [18.5, -66.1],
+    'America/Montevideo':     [-34.9, -56.2],
+    'America/Bogota':         [4.7, -74.1],
+    'Europe/London':          [51.5, -0.1],
+    'Europe/Paris':           [48.8, 2.3],
+    'Europe/Berlin':          [52.5, 13.4],
+    'Europe/Amsterdam':       [52.4, 4.9],
+    'Europe/Rome':            [41.9, 12.5],
+    'Europe/Madrid':          [40.4, -3.7],
+    'Europe/Lisbon':          [38.7, -9.1],
+    'Europe/Moscow':          [55.7, 37.6],
+    'Europe/Istanbul':        [41.0, 28.9],
+    'Europe/Warsaw':          [52.2, 21.0],
+    'Europe/Vienna':          [48.2, 16.4],
+    'Europe/Prague':          [50.1, 14.4],
+    'Europe/Bucharest':       [44.4, 26.1],
+    'Europe/Athens':          [37.9, 23.7],
+    'Europe/Helsinki':        [60.2, 25.0],
+    'Europe/Stockholm':       [59.3, 18.1],
+    'Europe/Oslo':            [59.9, 10.7],
+    'Europe/Copenhagen':      [55.7, 12.6],
+    'Europe/Dublin':          [53.3, -6.3],
+    'Europe/Zurich':          [47.4, 8.5],
+    'Europe/Brussels':        [50.8, 4.4],
+    'Europe/Kyiv':            [50.4, 30.5],
+    'Europe/Minsk':           [53.9, 27.6],
+    'Europe/Belgrade':        [44.8, 20.5],
+    'Europe/Sofia':           [42.7, 23.3],
+    'Europe/Riga':            [56.9, 24.1],
+    'Europe/Tallinn':         [59.4, 24.7],
+    'Europe/Vilnius':         [54.7, 25.3],
+    'Asia/Dubai':             [25.2, 55.3],
+    'Asia/Kolkata':           [28.6, 77.2],
+    'Asia/Bangkok':           [13.7, 100.5],
+    'Asia/Singapore':         [1.3, 103.8],
+    'Asia/Hong_Kong':         [22.3, 114.2],
+    'Asia/Shanghai':          [31.2, 121.5],
+    'Asia/Tokyo':             [35.7, 139.7],
+    'Asia/Seoul':             [37.6, 126.9],
+    'Asia/Karachi':           [24.9, 67.0],
+    'Asia/Dhaka':             [23.7, 90.4],
+    'Asia/Colombo':           [6.9, 79.9],
+    'Asia/Kathmandu':         [27.7, 85.3],
+    'Asia/Yangon':            [16.8, 96.2],
+    'Asia/Jakarta':           [-6.2, 106.8],
+    'Asia/Manila':            [14.6, 121.0],
+    'Asia/Taipei':            [25.0, 121.5],
+    'Asia/Kuala_Lumpur':      [3.1, 101.7],
+    'Asia/Ho_Chi_Minh':       [10.8, 106.7],
+    'Asia/Almaty':            [43.2, 76.9],
+    'Asia/Tashkent':          [41.3, 69.2],
+    'Asia/Tehran':            [35.7, 51.4],
+    'Asia/Baghdad':           [33.3, 44.4],
+    'Asia/Riyadh':            [24.7, 46.7],
+    'Asia/Jerusalem':         [31.8, 35.2],
+    'Asia/Beirut':            [33.9, 35.5],
+    'Asia/Kabul':             [34.5, 69.2],
+    'Asia/Yekaterinburg':     [56.8, 60.6],
+    'Asia/Novosibirsk':       [54.9, 82.9],
+    'Asia/Krasnoyarsk':       [56.0, 92.9],
+    'Asia/Irkutsk':           [52.3, 104.3],
+    'Asia/Vladivostok':       [43.1, 131.9],
+    'Asia/Colombo':           [6.9, 79.9],
+    'Asia/Tbilisi':           [41.7, 44.8],
+    'Asia/Yerevan':           [40.2, 44.5],
+    'Asia/Baku':              [40.4, 49.9],
+    'Australia/Sydney':       [-33.9, 151.2],
+    'Australia/Melbourne':    [-37.8, 145.0],
+    'Australia/Brisbane':     [-27.5, 153.0],
+    'Australia/Perth':        [-31.9, 115.9],
+    'Australia/Adelaide':     [-34.9, 138.6],
+    'Australia/Darwin':       [-12.5, 130.8],
+    'Australia/Hobart':       [-42.9, 147.3],
+    'Pacific/Auckland':       [-36.9, 174.8],
+    'Pacific/Honolulu':       [21.3, -157.8],
+    'Pacific/Fiji':           [-18.1, 178.4],
+    'Pacific/Guam':           [13.5, 144.8],
+    'Africa/Cairo':           [30.0, 31.2],
+    'Africa/Lagos':           [6.5, 3.4],
+    'Africa/Johannesburg':    [-26.2, 28.0],
+    'Africa/Nairobi':         [-1.3, 36.8],
+    'Africa/Casablanca':      [33.6, -7.6],
+    'Africa/Addis_Ababa':     [9.0, 38.7],
+    'Africa/Accra':           [5.6, -0.2],
+    'Africa/Tunis':           [36.8, 10.2],
+    'Africa/Algiers':         [36.7, 3.1],
+    'Africa/Khartoum':        [15.6, 32.5],
+  };
+
+  const map = L.map('tz-map', {
+    zoomControl: true,
+    scrollWheelZoom: false,
+  }).setView([20, 10], 2);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
+  fetch('/api/timezone-stats/')
+    .then(r => r.json())
+    .then(function (stats) {
+      if (!stats.length) {
+        document.getElementById('map-note').textContent = 'no user location data yet — set your timezone in your profile';
+        return;
+      }
+
+      const maxCount = Math.max.apply(null, stats.map(function (s) { return s.count; }));
+      const bounds   = [];
+
+      stats.forEach(function (s) {
+        const coords = TIMEZONE_COORDS[s.timezone];
+        if (!coords) return;
+
+        const radius  = 6 + Math.round((s.count / maxCount) * 22);
+        const opacity = 0.35 + (s.count / maxCount) * 0.55;
+
+        L.circleMarker(coords, {
+          radius:      radius,
+          color:       '#5c9eff',
+          fillColor:   '#5c9eff',
+          fillOpacity: opacity,
+          weight:      1,
+          opacity:     0.9,
+        })
+          .addTo(map)
+          .bindTooltip(
+            s.timezone.replace(/_/g, ' ') + ' &nbsp;· &nbsp;' + s.count + ' user' + (s.count !== 1 ? 's' : ''),
+            { className: 'tz-tooltip' }
+          );
+
+        bounds.push(coords);
+      });
+
+      if (bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+      } else if (bounds.length === 1) {
+        map.setView(bounds[0], 4);
+      }
+    })
+    .catch(function (e) { console.error('map load error:', e); });
+})();
+</script>
+<style>
+/* leaflet tooltip override */
+.tz-tooltip {
+  background: var(--bg-panel, #191d2a);
+  border: 1px solid var(--border, #2e3550);
+  color: var(--text, #f0f4ff);
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.tz-tooltip::before { display: none; }
+</style>
+{% endblock %}

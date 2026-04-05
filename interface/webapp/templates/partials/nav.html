@@ -1,0 +1,22 @@
+<header>
+  <div>
+    <a href="/" class="site-title">h4ks.com</a>
+    <div class="site-tagline">a community of hackers, self-hosters &amp; builders</div>
+  </div>
+  <nav>
+    {% for app in apps %}
+      {% if app.location|slice:":4" == "http" %}
+        <a href="{{ app.location }}" target="_blank" rel="noopener noreferrer"{% if app.color %} style="color:{{ app.color }}"{% endif %}>{{ app.name }}</a>
+      {% else %}
+        <a href="{{ app.location }}"{% if app.color %} style="color:{{ app.color }}"{% endif %}>{{ app.name }}</a>
+      {% endif %}
+    {% endfor %}
+    <a href="/clocks/">clocks</a>
+    {% if user.is_authenticated %}
+      <a href="/profile/">profile</a>
+    {% else %}
+      <a href="/oidc/authenticate/">login</a>
+      <a href="/sign-up/" style="color:var(--accent2)">sign up</a>
+    {% endif %}
+  </nav>
+</header>

@@ -1,332 +1,335 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Profile - h4ks</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #4A90E2;
-            text-align: center;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .nav {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .nav a {
-            color: #4A90E2;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-        .nav a:hover {
-            text-decoration: underline;
-        }
-        .user-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-        .user-info p {
-            margin: 5px 0;
-        }
-        .section {
-            margin-top: 30px;
-        }
-        .section h2 {
-            color: #333;
-            border-bottom: 2px solid #4A90E2;
-            padding-bottom: 10px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            font-family: monospace;
-            box-sizing: border-box;
-            resize: vertical;
-        }
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-sizing: border-box;
-            background-color: white;
-        }
-        button {
-            background-color: #4A90E2;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #357ABD;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            display: none;
-        }
-        .success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .ssh-instructions {
-            background-color: #e7f3ff;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #4A90E2;
-            margin-top: 15px;
-        }
-        .ssh-instructions code {
-            background-color: #fff;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-inactive {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="/">← Home</a>
-        <span>|</span>
-        {% if user.is_staff %}
-            <a href="/admin/">Django Admin</a>
-            <span>|</span>
-            <a href="/admin-dashboard/">User Dashboard</a>
-            <span>|</span>
-        {% endif %}
-        <a href="{% url 'oidc_logout' %}">Logout</a>
+{% extends "base.html" %}
+
+{% block title %}Profile — h4ks.com{% endblock %}
+
+{% block extra_css %}
+:root { --container-max: 860px; }
+
+body { padding-bottom: 4rem; }
+
+/* topnav */
+.topnav {
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+}
+
+.topnav a {
+  color: var(--text-mid);
+  padding: 0.2rem 0.65rem;
+  border: 1px solid transparent;
+}
+
+.topnav a:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--bg-panel);
+  text-decoration: none;
+}
+
+.topnav .sep { color: var(--border); padding: 0 0.15rem; }
+
+/* page title */
+.page-title {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+}
+
+/* user info strip */
+.user-strip {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.user-strip span { color: var(--text-dim); }
+.user-strip strong { color: var(--text); }
+
+.badge {
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid;
+}
+
+.badge-admin  { color: var(--accent);   border-color: var(--accent); }
+.badge-active { color: var(--accent);   border-color: var(--accent); }
+.badge-none   { color: var(--text-dim); border-color: var(--border); }
+
+/* sections */
+.section { margin-bottom: 2rem; }
+
+/* form elements */
+.form-group { margin-bottom: 1.2rem; }
+
+label {
+  display: block;
+  font-size: 0.83rem;
+  color: var(--text-mid);
+  margin-bottom: 0.4rem;
+  font-family: 'Courier New', monospace;
+}
+
+textarea, select {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  outline: none;
+}
+
+textarea:focus, select:focus { border-color: var(--accent); }
+select option { background: var(--bg-panel); }
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  font-family: 'Courier New', monospace;
+}
+
+input[type="password"] {
+  width: 100%;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  outline: none;
+}
+input[type="password"]:focus { border-color: var(--accent); }
+
+.mail-info {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.8rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  margin-top: 0.8rem;
+  color: var(--text-mid);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.6rem 1.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 1rem;
+  display: inline-block;
+}
+.btn-secondary:hover { background: var(--bg-panel); }
+.btn-secondary:disabled { border-color: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+button[type="submit"] {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 0.6rem 1.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button[type="submit"]:hover { background: #4a908a; }
+button[type="submit"]:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+/* result messages */
+.result {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.83rem;
+  display: none;
+}
+
+.result.success { border: 1px solid var(--accent);  color: var(--accent);  background: #0d1f1e; }
+.result.error   { border: 1px solid var(--accent2); color: var(--accent2); background: #1f1808; }
+
+@media (max-width: 600px) {
+  .container { padding: 0 1rem; }
+  .user-strip { flex-direction: column; gap: 0.5rem; }
+  .topnav { flex-wrap: wrap; }
+}
+{% endblock %}
+
+{% block content %}
+  <div class="topnav">
+    <a href="/">h4ks.com</a>
+    {% if user.is_staff %}
+      <span class="sep">|</span>
+      <a href="/admin/">admin</a>
+      <span class="sep">|</span>
+      <a href="/user-management/">user management</a>
+    {% endif %}
+    <span class="sep">|</span>
+    <a href="{% url 'logout' %}">logout</a>
+  </div>
+
+  <div class="page-title">profile</div>
+
+  <div class="user-strip">
+    <div><span>user </span><strong>{{ user.username }}</strong></div>
+    <div><span>email </span><strong>{{ user.email }}</strong></div>
+    <div>
+      {% if user.is_staff %}
+        <span class="badge badge-admin">ADMIN</span>
+      {% else %}
+        <span class="badge">member</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <form id="profileForm">
+    {% csrf_token %}
+
+    <div class="section">
+      <div class="section-label">preferences</div>
+      <div class="form-group">
+        <label for="timezone">timezone</label>
+        <select id="timezone" name="timezone">
+          <option value="">-- select --</option>
+        </select>
+        <div class="field-hint">used to display times in your local timezone</div>
+      </div>
     </div>
 
-    <h1>Your Profile</h1>
+    <button type="submit" id="saveButton">save profile</button>
+  </form>
 
-    <div class="container">
-        <div class="user-info">
-            <p><strong>Username:</strong> {{ user.username }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            {% if user.is_staff %}
-                <p><strong>Role:</strong> Admin <span class="status-badge status-active">ADMIN</span></p>
-            {% else %}
-                <p><strong>Role:</strong> User</p>
-            {% endif %}
-        </div>
+  <div id="result" class="result"></div>
 
-        <form id="profileForm">
-            {% csrf_token %}
-
-            <div class="section">
-                <h2>Preferences</h2>
-
-                <div class="form-group">
-                    <label for="timezone">Timezone:</label>
-                    <select id="timezone" name="timezone">
-                        <option value="">-- Select timezone --</option>
-                    </select>
-                    <p style="margin-top: 5px; font-size: 13px; color: #666;">
-                        Used to display times in your local timezone.
-                    </p>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>SSH Access</h2>
-
-                <p>
-                    <strong>Status:</strong>
-                    {% if profile.has_ssh_key %}
-                        <span class="status-badge status-active">KEY CONFIGURED</span>
-                    {% else %}
-                        <span class="status-badge status-inactive">NO KEY</span>
-                    {% endif %}
-                </p>
-
-                <div class="form-group">
-                    <label for="ssh_public_key">SSH Public Key:</label>
-                    <textarea
-                        id="ssh_public_key"
-                        name="ssh_public_key"
-                        rows="8"
-                        placeholder="Paste your SSH public key here (e.g., ssh-rsa AAAAB3NzaC1...)"
-                    >{{ profile.ssh_public_key }}</textarea>
-                </div>
-
-                {% if profile.has_ssh_key %}
-                    <div class="ssh-instructions">
-                        <p><strong>✓ You can now connect via SSH:</strong></p>
-                        <p><code>ssh {{ ssh_host }}</code></p>
-                        <p style="margin-top: 10px; font-size: 14px; color: #555;">
-                            Make sure you're using the private key corresponding to the public key you uploaded.
-                        </p>
-                    </div>
-                {% else %}
-                    <div class="ssh-instructions">
-                        <p><strong>How to generate an SSH key:</strong></p>
-                        <p><code>ssh-keygen -t ed25519 -C "your_email@example.com"</code></p>
-                        <p style="margin-top: 10px; font-size: 14px; color: #555;">
-                            Then paste the contents of <code>~/.ssh/id_ed25519.pub</code> above.
-                        </p>
-                    </div>
-                {% endif %}
-            </div>
-
-            <button type="submit" id="saveButton">Save Profile</button>
-        </form>
-
-        <div id="result" class="result"></div>
+  {% if has_mail_role %}
+  <div class="section" style="margin-top:2rem;">
+    <div class="section-label">mail</div>
+    <p style="font-size:0.85rem; margin-bottom:0.8rem; color:var(--text-dim);">
+      Set a password for IMAP/SMTP clients and the
+      <a href="https://mail.h4ks.com">mail.h4ks.com</a> self-service portal.
+    </p>
+    <div class="form-group">
+      <label for="mail_password">new password</label>
+      <input type="password" id="mail_password" placeholder="min 8 characters">
     </div>
+    <div class="form-group">
+      <label for="mail_password_confirm">confirm password</label>
+      <input type="password" id="mail_password_confirm" placeholder="repeat password">
+    </div>
+    <div class="mail-info">
+      <strong>IMAP:</strong> h4ks.com &middot; 993 (SSL) / 143 (STARTTLS)<br>
+      <strong>SMTP:</strong> h4ks.com &middot; 465 (SSL) / 587 (STARTTLS)<br>
+      username: your full email address
+    </div>
+    <button type="button" class="btn-secondary" id="mailPasswordButton">set mail password</button>
+    <div id="mailResult" class="result"></div>
+  </div>
+  {% endif %}
+{% endblock %}
 
-    <script>
-        const TIMEZONES = [
-            'UTC',
-            'America/New_York',
-            'America/Chicago',
-            'America/Denver',
-            'America/Los_Angeles',
-            'America/Anchorage',
-            'America/Sao_Paulo',
-            'America/Buenos_Aires',
-            'America/Mexico_City',
-            'America/Toronto',
-            'America/Vancouver',
-            'Europe/London',
-            'Europe/Paris',
-            'Europe/Berlin',
-            'Europe/Amsterdam',
-            'Europe/Rome',
-            'Europe/Madrid',
-            'Europe/Lisbon',
-            'Europe/Moscow',
-            'Europe/Istanbul',
-            'Asia/Dubai',
-            'Asia/Kolkata',
-            'Asia/Bangkok',
-            'Asia/Singapore',
-            'Asia/Hong_Kong',
-            'Asia/Shanghai',
-            'Asia/Tokyo',
-            'Asia/Seoul',
-            'Australia/Sydney',
-            'Australia/Melbourne',
-            'Australia/Perth',
-            'Pacific/Auckland',
-            'Pacific/Honolulu',
-        ];
+{% block scripts %}
+<script>
+const TIMEZONES = [
+  'UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+  'America/Anchorage','America/Sao_Paulo','America/Buenos_Aires','America/Mexico_City',
+  'America/Toronto','America/Vancouver','Europe/London','Europe/Paris','Europe/Berlin',
+  'Europe/Amsterdam','Europe/Rome','Europe/Madrid','Europe/Lisbon','Europe/Moscow',
+  'Europe/Istanbul','Asia/Dubai','Asia/Kolkata','Asia/Bangkok','Asia/Singapore',
+  'Asia/Hong_Kong','Asia/Shanghai','Asia/Tokyo','Asia/Seoul','Australia/Sydney',
+  'Australia/Melbourne','Australia/Perth','Pacific/Auckland','Pacific/Honolulu',
+];
 
-        const savedTimezone = '{{ profile.timezone|escapejs }}';
-        const timezoneSelect = document.getElementById('timezone');
+const savedTz = '{{ profile.timezone|escapejs }}';
+const sel = document.getElementById('timezone');
+TIMEZONES.forEach(tz => {
+  const o = document.createElement('option');
+  o.value = tz;
+  o.textContent = tz.replace(/_/g, ' ');
+  if (tz === savedTz) o.selected = true;
+  sel.appendChild(o);
+});
 
-        TIMEZONES.forEach(tz => {
-            const option = document.createElement('option');
-            option.value = tz;
-            option.textContent = tz.replace(/_/g, ' ');
-            if (tz === savedTimezone) {
-                option.selected = true;
-            }
-            timezoneSelect.appendChild(option);
-        });
+document.getElementById('profileForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveButton');
+  const res = document.getElementById('result');
+  btn.disabled = true;
+  res.style.display = 'none';
 
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+  try {
+    const fd = new FormData();
+    fd.append('timezone', sel.value);
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-            const sshKey = document.getElementById('ssh_public_key').value.trim();
-            const timezone = document.getElementById('timezone').value;
-            const saveButton = document.getElementById('saveButton');
-            const result = document.getElementById('result');
+    const r = await fetch('{% url "profile" %}', { method: 'POST', body: fd });
+    const data = await r.json();
 
-            saveButton.disabled = true;
-            result.style.display = 'none';
+    if (data.success) {
+      res.className = 'result success';
+      res.textContent = '✓ ' + data.message;
+      res.style.display = 'block';
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      throw new Error(data.error || 'unknown error');
+    }
+  } catch (err) {
+    res.className = 'result error';
+    res.textContent = '✗ ' + err.message;
+    res.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
 
-            try {
-                const formData = new FormData();
-                formData.append('ssh_public_key', sshKey);
-                formData.append('timezone', timezone);
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-
-                const response = await fetch('{% url "profile" %}', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    result.className = 'result success';
-                    result.innerHTML = `<strong>✓ ${data.message}</strong>`;
-                    result.style.display = 'block';
-
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    throw new Error(data.error || 'Unknown error');
-                }
-            } catch (error) {
-                result.className = 'result error';
-                result.innerHTML = `<strong>✗ Error</strong><p>${error.message}</p>`;
-                result.style.display = 'block';
-            } finally {
-                saveButton.disabled = false;
-            }
-        });
-    </script>
-</body>
-</html>
+const mailBtn = document.getElementById('mailPasswordButton');
+if (mailBtn) mailBtn.addEventListener('click', async function () {
+  const btn = this;
+  const res = document.getElementById('mailResult');
+  btn.disabled = true;
+  res.style.display = 'none';
+  try {
+    const fd = new FormData();
+    fd.append('mail_password', document.getElementById('mail_password').value);
+    fd.append('mail_password_confirm', document.getElementById('mail_password_confirm').value);
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    const r = await fetch('{% url "set_mail_password" %}', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (data.success) {
+      res.className = 'result success';
+      res.textContent = '✓ ' + data.message;
+      document.getElementById('mail_password').value = '';
+      document.getElementById('mail_password_confirm').value = '';
+    } else {
+      throw new Error(data.error || 'unknown error');
+    }
+  } catch (err) {
+    res.className = 'result error';
+    res.textContent = '✗ ' + err.message;
+  } finally {
+    res.style.display = 'block';
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}

@@ -11,7 +11,9 @@ services:
     volumes:
     - db_data:/interface/data
     - static_files:/interface/static
+    - media_files:/interface/media
 
 volumes:
   db_data:
   static_files:
+  media_files:

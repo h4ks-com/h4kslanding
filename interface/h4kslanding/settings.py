@@ -31,6 +31,13 @@ LOGTO_APP_ID = config('LOGTO_APP_ID', default='')
 LOGTO_APP_SECRET = config('LOGTO_APP_SECRET', default='')
 LOGTO_REDIRECT_URI = config('LOGTO_REDIRECT_URI', default='https://h4ks.com/auth/callback')
 
+STALWART_API_URL      = config('STALWART_API_URL',      default='https://mail.h4ks.com/api')
+STALWART_ADMIN_USER   = config('STALWART_ADMIN_USER',   default='admin')
+STALWART_ADMIN_SECRET = config('STALWART_ADMIN_SECRET', default='')
+
+TURNSTILE_SITE_KEY   = config('TURNSTILE_SITE_KEY',   default='')
+TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -137,6 +144,9 @@ STATIC_URL = 'static/'
 #STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 #STATIC_ROOT = '/static'
 STATIC_ROOT = "static"
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
 
 #STATIC_FILES_DIRS = [
 #     os.path.join(BASE_DIR, 'static'),
