@@ -38,6 +38,8 @@ STALWART_ADMIN_SECRET = config('STALWART_ADMIN_SECRET', default='')
 TURNSTILE_SITE_KEY   = config('TURNSTILE_SITE_KEY',   default='')
 TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='')
 
+SHOW_NAV = True
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -87,6 +89,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'webapp.context_processors.ui_flags',
             ],
         },
     },

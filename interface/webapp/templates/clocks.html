@@ -113,7 +113,7 @@
 {% endblock %}
 
 {% block content %}
-  {% include "partials/nav.html" %}
+  {% if show_nav %}{% include "partials/nav.html" %}{% endif %}
 
   <!-- your time -->
   <div class="your-time-section">
@@ -122,7 +122,7 @@
       <div class="your-tz-label" id="your-tz-label">{{ user_timezone|default:"" }}</div>
       <div class="your-tz-time" id="your-time-display">--:--:--</div>
       <div class="your-tz-date" id="your-date-display"></div>
-      {% if not user.is_authenticated %}
+      {% if not user.is_authenticated and show_nav %}
         <div class="your-tz-hint"><a href="/oidc/authenticate/">login</a> to set your timezone</div>
       {% elif not user_timezone %}
         <div class="your-tz-hint" id="tz-hint"><a href="/profile/">save your timezone in profile</a> to make it permanent</div>
