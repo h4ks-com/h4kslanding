@@ -69,6 +69,7 @@ def api_timezone_stats(request):
     return JsonResponse(stats, safe=False)
 
 
+@csrf_exempt
 @require_http_methods(["GET", "POST"])
 def api_announce(request):
     if request.method == 'GET':
