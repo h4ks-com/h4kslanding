@@ -4,23 +4,59 @@ import secrets
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
+from django.shortcuts import render
 
 from .models import Location, App, PendingUser, UserProfile, Announcement, FeaturedProject, ApiToken, ChatLine
+
+
+class BulkSetMixin:
+    """Adds bulk-set actions for color and weight fields."""
+
+    def _bulk_set(self, request, queryset, field_name, field_label, input_type, default=''):
+        if 'apply' in request.POST:
+            value = request.POST.get(field_name, default)
+            if input_type == 'number':
+                try:
+                    value = int(value)
+                except ValueError:
+                    value = 0
+            count = queryset.update(**{field_name: value})
+            self.message_user(request, f"Updated {field_label} on {count} item(s).")
+            return None
+        return render(request, 'admin/bulk_set.html', {
+            'field_name': field_name,
+            'field_label': field_label,
+            'input_type': input_type,
+            'current_value': default,
+            'action': f'bulk_set_{field_name}',
+            'selected_ids': list(queryset.values_list('id', flat=True)),
+            'count': queryset.count(),
+        })
+
+    def bulk_set_color(self, request, queryset):
+        return self._bulk_set(request, queryset, 'color', 'Color', 'color', '#5c9eff')
+    bulk_set_color.short_description = 'Set color'
+
+    def bulk_set_weight(self, request, queryset):
+        return self._bulk_set(request, queryset, 'weight', 'Weight', 'number', '0')
+    bulk_set_weight.short_description = 'Set weight'
 
 admin.site.site_header = "h4ks Admin"
 admin.site.site_title = "h4ks Admin"
 
 @admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    list_display = ('name','zone','weight','color',)
-    list_filter = ('name','zone','weight','color',)
-    fields = ('name', 'zone','weight','color',)
+class LocationAdmin(BulkSetMixin, admin.ModelAdmin):
+    list_display = ('name', 'zone', 'weight', 'color')
+    list_filter = ('zone',)
+    fields = ('name', 'zone', 'weight', 'color')
+    actions = ['bulk_set_color', 'bulk_set_weight']
 
 @admin.register(App)
-class AppAdmin(admin.ModelAdmin):
-    list_display = ('name','location','weight','color',)
-    list_filter = ('name','location','weight','color',)
-    fields = ('name', 'location','weight','color',)
+class AppAdmin(BulkSetMixin, admin.ModelAdmin):
+    list_display = ('name', 'location', 'weight', 'color')
+    list_filter = ('location',)
+    fields = ('name', 'location', 'weight', 'color')
+    actions = ['bulk_set_color', 'bulk_set_weight']
 
 @admin.register(PendingUser)
 class PendingUserAdmin(admin.ModelAdmin):
@@ -72,10 +108,11 @@ class AnnouncementAdmin(admin.ModelAdmin):
 
 
 @admin.register(FeaturedProject)
-class FeaturedProjectAdmin(admin.ModelAdmin):
+class FeaturedProjectAdmin(BulkSetMixin, admin.ModelAdmin):
     list_display = ('name', 'active', 'weight', 'url', 'github_url', 'tech_tags')
     list_filter = ('active',)
     search_fields = ('name', 'description')
+    actions = ['bulk_set_color', 'bulk_set_weight']
 
 
 @admin.register(ApiToken)
