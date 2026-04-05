@@ -1,9 +1,22 @@
-from django.db import models
-from django.utils import timezone
+from datetime import timedelta
+
+from colorfield.fields import ColorField
 from django.contrib.auth.models import User
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from datetime import timedelta
+from django.utils import timezone
+
+H4KS_PALETTE = [
+    ('#5c9eff', 'Blue'),
+    ('#ff8c4b', 'Orange'),
+    ('#4ade80', 'Green'),
+    ('#a371f7', 'Purple'),
+    ('#f7cc71', 'Yellow'),
+    ('#e05c5c', 'Red'),
+    ('#5865f2', 'Blurple'),
+    ('#58a6a0', 'Teal'),
+]
 
 
 class Location(models.Model):
@@ -14,10 +27,7 @@ class Location(models.Model):
     name = models.CharField(max_length=300, null=True, blank=True)
     zone = models.CharField(max_length=300, null=True, blank=True)
     weight = models.IntegerField(default=0, null=True, blank=True)
-    color = models.CharField(max_length=300, null=True, blank=True)
-
-    #def f(x):
-    #    x
+    color = ColorField(blank=True, null=True, samples=H4KS_PALETTE)
 
     def __str__(self):
         return self.name
@@ -29,12 +39,8 @@ class App(models.Model):
 
     name = models.CharField(max_length=300, null=True, blank=True)
     location = models.CharField(max_length=300, null=True, blank=True)
-    #zone = models.CharField(max_length=300, null=True, blank=True)
     weight = models.IntegerField(default=0, null=True, blank=True)
-    color = models.CharField(max_length=300, null=True, blank=True)
-
-    #def f(x):
-    #    x
+    color = ColorField(blank=True, null=True, samples=H4KS_PALETTE)
 
     def __str__(self):
         return self.name
@@ -125,7 +131,7 @@ class FeaturedProject(models.Model):
     description = models.TextField()
     tech_tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags, e.g. python, IRC, asyncio")
     image = models.ImageField(upload_to='projects/', blank=True, null=True, help_text="Project screenshot or logo")
-    color = models.CharField(max_length=20, blank=True)
+    color = ColorField(blank=True, default='', samples=H4KS_PALETTE)
     weight = models.IntegerField(default=0)
     active = models.BooleanField(default=True)
 

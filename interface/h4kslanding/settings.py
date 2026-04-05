@@ -55,6 +55,7 @@ CSRF_TRUSTED_ORIGINS = ['https://h4ks.com']
 
 INSTALLED_APPS = [
     'webapp.apps.WebappConfig',
+    'colorfield',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
