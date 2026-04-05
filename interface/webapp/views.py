@@ -542,7 +542,7 @@ def signup_submit(request):
             return JsonResponse({'error': 'Failed to authenticate with authentication service'}, status=500)
 
         email = pending_user.email
-        username = email.split('@')[0]
+        username = email.split('@')[0].lower()
 
         headers = {
             'Authorization': f'Bearer {access_token}',
@@ -632,13 +632,13 @@ def sign_up(request: HttpRequest) -> HttpResponse:
     if not token or not _verify_turnstile(token, ip):
         return JsonResponse({'error': 'Please complete the challenge.'}, status=400)
 
-    username = request.POST.get('username', '').strip()
+    username = request.POST.get('username', '').strip().lower()
     password = request.POST.get('password', '').strip()
 
     if not username or not password:
         return JsonResponse({'error': 'All fields are required'}, status=400)
     if not USERNAME_RE.match(username):
-        return JsonResponse({'error': 'Username must be 3–30 characters, letters/numbers/underscores only'}, status=400)
+        return JsonResponse({'error': 'Username must be 3–30 characters, lowercase letters/numbers/dots/hyphens only'}, status=400)
     if len(password) < 8:
         return JsonResponse({'error': 'Password must be at least 8 characters'}, status=400)
 
@@ -650,7 +650,7 @@ def sign_up(request: HttpRequest) -> HttpResponse:
         response = httpx.post(
             f"{settings.LOGTO_ENDPOINT}/api/users",
             headers={'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'},
-            json={'username': username, 'password': password, 'name': username},
+            json={'username': username, 'password': password, 'name': username, 'primaryEmail': f'{username}@h4ks.com'},
             timeout=10.0,
         )
 
@@ -683,7 +683,7 @@ def profile(request):
     context = {
         'user': request.user,
         'profile': user_profile,
-        'has_mail_role': user_has_mail_role(user_profile.logto_sub) if user_profile.logto_sub else False,
+        'has_mail_role': request.user.is_staff or (user_has_mail_role(user_profile.logto_sub) if user_profile.logto_sub else False),
     }
     return HttpResponse(template.render(context, request))
 
@@ -704,7 +704,7 @@ def set_mail_password(request):
         return JsonResponse({'success': False, 'error': 'Passwords do not match.'}, status=400)
 
     logto_sub = getattr(request.user, 'profile', None) and request.user.profile.logto_sub
-    if not logto_sub or not user_has_mail_role(logto_sub):
+    if not request.user.is_staff and (not logto_sub or not user_has_mail_role(logto_sub)):
         return JsonResponse({'success': False, 'error': 'Mail access not enabled for your account.'}, status=403)
 
     email = request.user.email

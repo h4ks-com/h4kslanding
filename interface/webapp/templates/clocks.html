@@ -124,7 +124,7 @@
       <div class="your-tz-date" id="your-date-display"></div>
       {% if not user.is_authenticated and show_nav %}
         <div class="your-tz-hint"><a href="/oidc/authenticate/">login</a> to set your timezone</div>
-      {% elif not user_timezone %}
+      {% elif not user_timezone and show_nav %}
         <div class="your-tz-hint" id="tz-hint"><a href="/profile/">save your timezone in profile</a> to make it permanent</div>
       {% endif %}
     </div>

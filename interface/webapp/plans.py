@@ -11,7 +11,7 @@ class PlanConfig(TypedDict):
     roles: list[str]
 
 
-USERNAME_RE: re.Pattern[str] = re.compile(r'^[a-zA-Z0-9_]{3,30}$')
+USERNAME_RE: re.Pattern[str] = re.compile(r'^[a-z0-9.\-]{3,30}$')
 
 # Each tier adds roles on top of the previous one; order defines plan hierarchy.
 _PLAN_TIERS: list[tuple[PlanKey, str, str, list[str]]] = [

@@ -120,9 +120,11 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
     <div class="form-group">
       <label for="username">username</label>
       <input type="text" id="username" name="username" required
-             placeholder="your_handle" autocomplete="username"
-             minlength="3" maxlength="30">
-      <div class="field-hint">3–30 characters · letters, numbers, underscores</div>
+             placeholder="your-handle" autocomplete="username"
+             minlength="3" maxlength="30"
+             pattern="[a-z0-9.\-]+"
+             oninput="this.value=this.value.toLowerCase()">
+      <div class="field-hint">3–30 characters · lowercase letters, numbers, dots, hyphens</div>
     </div>
 
     <div class="form-group">
@@ -164,8 +166,9 @@ document.getElementById('signupForm').addEventListener('submit', async function 
 
     if (data.success) {
       this.style.display = 'none';
+      document.querySelector('.login-link').style.display = 'none';
       result.className = 'result success';
-      result.innerHTML = '✓ ' + data.message + '&nbsp; <a href="/oidc/authenticate/" style="color:var(--accent)">log in →</a>';
+      result.innerHTML = '✓ Account created! <a href="/oidc/authenticate/" style="color:var(--accent)">log in →</a>';
       result.style.display = 'block';
     } else {
       throw new Error(data.error || 'unknown error');
