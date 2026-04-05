@@ -591,9 +591,10 @@ def signup_submit(request):
 
 
 def _get_client_ip(request: HttpRequest) -> str:
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
+    # CF-Connecting-IP is set by Cloudflare and cannot be spoofed through the proxy
+    cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
+    if cf_ip:
+        return cf_ip.strip()
     return request.META.get('REMOTE_ADDR', '')
 
 
