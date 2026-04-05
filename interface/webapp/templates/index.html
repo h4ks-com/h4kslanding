@@ -617,10 +617,10 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
     return li;
   }
 
-  // sentinel triggers load when it scrolls into view inside the list
+  // sentinel at top — triggers loading older items when scrolled into view
   const sentinel = document.createElement('li');
   sentinel.style.cssText = 'height:1px;list-style:none;';
-  announceList.appendChild(sentinel);
+  announceList.prepend(sentinel);
 
   async function loadAnnouncements() {
     if (announceLoading || !announceHasMore) return;
@@ -628,14 +628,26 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
 
     try {
       const data = await fetch('/api/announce/?limit=20&offset=' + announceOffset).then(r => r.json());
+      const isFirst = announceOffset === 0;
 
-      for (const a of data.announcements) {
-        announceList.insertBefore(buildAnnouncement(a), sentinel);
-      }
+      // preserve scroll anchor when prepending older items
+      const prevHeight = announceList.scrollHeight;
+
+      // API returns newest-first; reverse so oldest of batch sits closest to top
+      const items = data.announcements.slice().reverse();
+      items.forEach(function (a) { announceList.appendChild(buildAnnouncement(a)); });
 
       announceOffset  = data.next_offset;
       announceHasMore = data.has_more;
       if (!announceHasMore) sentinel.remove();
+
+      if (isFirst) {
+        // snap to bottom so newest is visible
+        announceList.scrollTop = announceList.scrollHeight;
+      } else {
+        // keep the user's reading position stable after prepend
+        announceList.scrollTop += announceList.scrollHeight - prevHeight;
+      }
     } catch (e) {
       console.error('announce load error:', e);
     } finally {
@@ -645,7 +657,7 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
 
   new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting) loadAnnouncements();
-  }, { root: announceList, rootMargin: '80px' }).observe(sentinel);
+  }, { root: announceList, rootMargin: '40px' }).observe(sentinel);
 
 })();
 
