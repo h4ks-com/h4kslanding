@@ -1,6 +1,10 @@
+import hashlib
+import secrets
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
+
 from .models import Location, App, PendingUser, UserProfile, Announcement, FeaturedProject, ApiToken, ChatLine
 
 admin.site.site_header = "h4ks Admin"
@@ -78,8 +82,20 @@ class FeaturedProjectAdmin(admin.ModelAdmin):
 class ApiTokenAdmin(admin.ModelAdmin):
     list_display = ('name', 'active', 'created_at')
     list_filter = ('active',)
-    readonly_fields = ('token_hash', 'created_at')
-    fields = ('name', 'active', 'token_hash', 'created_at')
+    readonly_fields = ('created_at',)
+    fields = ('name', 'active', 'created_at')
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            raw_token = secrets.token_hex(32)
+            obj.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+            super().save_model(request, obj, form, change)
+            self.message_user(
+                request,
+                f"API token created. Copy it now — it won't be shown again: {raw_token}",
+            )
+        else:
+            super().save_model(request, obj, form, change)
 
 
 @admin.register(ChatLine)

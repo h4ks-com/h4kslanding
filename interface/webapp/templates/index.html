@@ -119,12 +119,13 @@
   width: 300px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
-  transition: box-shadow 0.15s;
 }
 
 .project-card:hover {
   background: #171b28;
-  box-shadow: inset 0 0 0 2px var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
 }
 
 .project-card-link {
