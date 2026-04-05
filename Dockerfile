@@ -24,6 +24,7 @@ RUN chmod +x /entrypoint.sh
 RUN mkdir -p /interface/static /interface/data /interface/media
 
 EXPOSE 20000
+EXPOSE 20001
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uv", "run", "gunicorn", "--bind", ":20000", "--workers", "3", "h4kslanding.wsgi:application"]

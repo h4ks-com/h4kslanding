@@ -5,6 +5,7 @@ services:
     - .env
     ports:
     - "20000:20000"
+    - "${CLOCKS_PORT:-20001}:${CLOCKS_PORT:-20001}"
     environment:
     - SECRET_KEY=${SECRET_KEY:-xxxxxxxxxx}
     - DEBUG=${DEBUG:-False}
