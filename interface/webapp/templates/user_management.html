@@ -326,6 +326,10 @@ button[type="submit"]:disabled, .btn-primary:disabled { background: var(--border
 
   <div id="signup-result" class="result"></div>
 
+  <!-- ── plan reference ───────────────────────────────────────────── -->
+  <div class="section-label" style="margin-top:2.5rem;">plans</div>
+  <div id="plan-reference"></div>
+
   <!-- ── user management ───────────────────────────────────────────── -->
   <div class="section-label" style="margin-top:2.5rem;">users</div>
 
@@ -415,6 +419,38 @@ function copyUrl() {
 // ── user management ───────────────────────────────────────────────────
 const PLANS = {{ plans_json|safe }};
 const PLAN_KEYS = Object.keys(PLANS);
+
+// ── plan reference table ──────────────────────────────────────────────
+(function () {
+  const allRoles = [];
+  PLAN_KEYS.forEach(function (k) {
+    PLANS[k].roles.forEach(function (r) { if (!allRoles.includes(r)) allRoles.push(r); });
+  });
+
+  let html = '<table style="width:100%;border-collapse:collapse;font-family:\'Courier New\',monospace;font-size:0.8rem;margin-bottom:0.5rem;">';
+  html += '<thead><tr>';
+  html += '<th style="text-align:left;padding:0.4rem 0.8rem 0.4rem 0;color:var(--text-dim);border-bottom:1px solid var(--border);white-space:nowrap;">plan</th>';
+  html += '<th style="text-align:left;padding:0.4rem 0.8rem;color:var(--text-dim);border-bottom:1px solid var(--border);">description</th>';
+  allRoles.forEach(function (r) {
+    html += '<th style="text-align:center;padding:0.4rem 0.6rem;color:var(--text-dim);border-bottom:1px solid var(--border);">' + r + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  PLAN_KEYS.forEach(function (k) {
+    const p = PLANS[k];
+    html += '<tr>';
+    html += '<td style="padding:0.35rem 0.8rem 0.35rem 0;color:var(--accent);white-space:nowrap;">' + p.display + '</td>';
+    html += '<td style="padding:0.35rem 0.8rem;color:var(--text-mid);">' + p.description + '</td>';
+    allRoles.forEach(function (r) {
+      const has = p.roles.includes(r);
+      html += '<td style="text-align:center;padding:0.35rem 0.6rem;color:' + (has ? 'var(--accent)' : 'var(--border)') + ';">' + (has ? '✓' : '·') + '</td>';
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('plan-reference').innerHTML = html;
+}());
 
 const tbody      = document.getElementById('user-tbody');
 const umEmpty    = document.getElementById('um-empty');
