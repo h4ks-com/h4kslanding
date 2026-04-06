@@ -17,6 +17,7 @@ import secrets
 import hashlib
 import json
 from functools import wraps
+from urllib.parse import quote
 
 def require_api_token(view_func):
     @wraps(view_func)
@@ -739,19 +740,21 @@ def set_mail_password(request):
     api_base = settings.STALWART_API_URL.rstrip('/')
     auth     = (settings.STALWART_ADMIN_USER, settings.STALWART_ADMIN_SECRET)
 
-    local_part = email.split('@')[0]
+    # Stalwart creates principals named by full email (directory.logto.fields.username = "email").
+    # The @ must be percent-encoded in the URL path to avoid a 401/routing issue.
+    principal_id = quote(email, safe='')
     try:
-        check = httpx.get(f'{api_base}/principal/{local_part}', auth=auth, timeout=8.0)
+        check = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0)
         if check.status_code == 404:
             resp = httpx.post(
                 f'{api_base}/principal',
                 auth=auth,
-                json={'type': 'individual', 'name': local_part, 'emails': [email], 'secrets': [f'$app$mail${password}']},
+                json={'type': 'individual', 'name': email, 'emails': [email], 'secrets': [f'$app$mail${password}']},
                 timeout=8.0,
             )
         else:
             resp = httpx.patch(
-                f'{api_base}/principal/{local_part}',
+                f'{api_base}/principal/{principal_id}',
                 auth=auth,
                 json=[{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}],
                 timeout=8.0,
