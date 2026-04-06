@@ -6,6 +6,9 @@ cd /interface
 echo "Running database migrations..."
 uv run python manage.py migrate --noinput
 
+echo "Creating cache table..."
+uv run python manage.py createcachetable 2>/dev/null || true
+
 echo "Collecting static files..."
 uv run python manage.py collectstatic --noinput --clear
 

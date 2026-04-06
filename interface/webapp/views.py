@@ -591,19 +591,28 @@ def signup_submit(request):
 
 
 def _get_client_ip(request: HttpRequest) -> str:
-    # CF-Connecting-IP is set by Cloudflare and cannot be spoofed through the proxy
-    cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
-    if cf_ip:
-        return cf_ip.strip()
+    # X-Forwarded-For is set by Traefik with the real client IP.
+    # Take only the first entry — subsequent entries could be appended by earlier proxies.
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR', '')
 
 
-def _check_signup_rate_limit(ip: str) -> bool:
-    key = f"signup_rate:{ip}"
-    count: int = cache.get(key, 0)
-    if count >= 5:
+def _check_signup_rate_limit(ip: str, fp: str = '') -> bool:
+    ip_key = f"signup_rate:ip:{ip}"
+    ip_count: int = cache.get(ip_key, 0)
+    if ip_count >= 5:
         return False
-    cache.set(key, count + 1, 3600)
+
+    if fp:
+        fp_key = f"signup_rate:fp:{fp}"
+        fp_count: int = cache.get(fp_key, 0)
+        if fp_count >= 1:
+            return False
+        cache.set(fp_key, fp_count + 1, 30 * 24 * 3600)
+
+    cache.set(ip_key, ip_count + 1, 3600)
     return True
 
 
@@ -622,11 +631,20 @@ def _verify_turnstile(token: str, ip: str) -> bool:
 @require_http_methods(["GET", "POST"])
 def sign_up(request: HttpRequest) -> HttpResponse:
     if request.method == "GET":
-        return render(request, 'sign_up.html', {'turnstile_site_key': settings.TURNSTILE_SITE_KEY})
+        fp = request.get_signed_cookie('_h4k_sf', default=None, salt='signup')
+        response = render(request, 'sign_up.html', {'turnstile_site_key': settings.TURNSTILE_SITE_KEY})
+        if not fp:
+            response.set_signed_cookie(
+                '_h4k_sf', secrets.token_hex(16),
+                salt='signup', max_age=30 * 24 * 3600,
+                httponly=True, samesite='Lax',
+            )
+        return response
 
     ip = _get_client_ip(request)
+    fp = request.get_signed_cookie('_h4k_sf', default='', salt='signup')
 
-    if not _check_signup_rate_limit(ip):
+    if not _check_signup_rate_limit(ip, fp):
         return JsonResponse({'error': 'Too many attempts. Try again later.'}, status=429)
 
     token = request.POST.get('cf-turnstile-response', '').strip()

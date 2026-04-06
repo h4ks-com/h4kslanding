@@ -27,4 +27,4 @@ EXPOSE 20000
 EXPOSE 20001
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["uv", "run", "gunicorn", "--bind", ":20000", "--workers", "3", "h4kslanding.wsgi:application"]
+CMD ["uv", "run", "gunicorn", "--bind", ":20000", "--workers", "3", "--access-logfile", "-", "h4kslanding.wsgi:application"]
