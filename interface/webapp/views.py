@@ -739,31 +739,19 @@ def set_mail_password(request):
     api_base = settings.STALWART_API_URL.rstrip('/')
     auth     = (settings.STALWART_ADMIN_USER, settings.STALWART_ADMIN_SECRET)
 
+    local_part = email.split('@')[0]
     try:
-        principal_name = email
-        check = httpx.get(f'{api_base}/principal/{email}', auth=auth, timeout=8.0)
+        check = httpx.get(f'{api_base}/principal/{local_part}', auth=auth, timeout=8.0)
         if check.status_code == 404:
-            local_part = email.split('@')[0]
-            check_local = httpx.get(f'{api_base}/principal/{local_part}', auth=auth, timeout=8.0)
-            if check_local.status_code == 200:
-                httpx.patch(
-                    f'{api_base}/principal/{local_part}',
-                    auth=auth,
-                    json=[{'action': 'set', 'field': 'name', 'value': email}],
-                    timeout=8.0,
-                )
-            else:
-                resp = httpx.post(
-                    f'{api_base}/principal',
-                    auth=auth,
-                    json={'type': 'individual', 'name': email, 'emails': [email], 'secrets': [f'$app$mail${password}']},
-                    timeout=8.0,
-                )
-                if resp.status_code not in (200, 201):
-                    return JsonResponse({'success': False, 'error': f'Mail server error ({resp.status_code}).'}, status=502)
-                return JsonResponse({'success': True, 'message': 'Mail password updated. Configure your client with this password.'})
-        resp = httpx.patch(
-                f'{api_base}/principal/{principal_name}',
+            resp = httpx.post(
+                f'{api_base}/principal',
+                auth=auth,
+                json={'type': 'individual', 'name': local_part, 'emails': [email], 'secrets': [f'$app$mail${password}']},
+                timeout=8.0,
+            )
+        else:
+            resp = httpx.patch(
+                f'{api_base}/principal/{local_part}',
                 auth=auth,
                 json=[{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}],
                 timeout=8.0,
@@ -774,3 +762,40 @@ def set_mail_password(request):
         return JsonResponse({'success': False, 'error': f'Could not reach mail server: {e}'}, status=502)
 
     return JsonResponse({'success': True, 'message': 'Mail password updated. Configure your client with this password.'})
+
+
+@require_http_methods(["GET"])
+def mail_userinfo_proxy(request: HttpRequest) -> JsonResponse:
+    """Stalwart OIDC directory endpoint with mail-role enforcement.
+
+    Stalwart v0.15 calls this URL with the client's bearer token and
+    treats HTTP 200 as authentication success, non-200 as failure. We
+    forward the token to Logto's /oidc/me and gate on the 'mail' role
+    before returning 200. Remove this proxy when upgrading to Stalwart
+    v0.16 (see config.toml comment).
+    """
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    token = auth_header[len('Bearer '):]
+
+    try:
+        resp = httpx.get(
+            f'{settings.LOGTO_ENDPOINT}/oidc/me',
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=8.0,
+        )
+    except httpx.RequestError:
+        return JsonResponse({'error': 'Upstream unavailable'}, status=502)
+
+    if resp.status_code != 200:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    data = resp.json()
+    roles: list[str] = data.get('roles', [])
+
+    if 'mail' not in roles:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    return JsonResponse(data, status=200)

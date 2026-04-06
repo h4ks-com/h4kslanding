@@ -19,5 +19,6 @@ urlpatterns = [
     path('api/admin/users/', views.api_logto_users, name='api_logto_users'),
     path('api/admin/users/<str:logto_id>/set-plan/', views.api_set_user_plan, name='api_set_user_plan'),
     path('api/admin/batch-set-plan/', views.api_batch_set_plan, name='api_batch_set_plan'),
+    path('api/mail/userinfo/', views.mail_userinfo_proxy, name='mail_userinfo_proxy'),
 ]
 
