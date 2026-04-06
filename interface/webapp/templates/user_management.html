@@ -354,7 +354,6 @@ button[type="submit"]:disabled, .btn-primary:disabled { background: var(--border
       <tr>
         <th><input type="checkbox" id="select-all" title="select all"></th>
         <th>user</th>
-        <th>username</th>
         <th>plan</th>
         <th>joined</th>
       </tr>
@@ -493,7 +492,6 @@ function buildRow(u) {
       <div>${u.name || u.username || u.id}</div>
       <div class="user-email">${u.primaryEmail || ''}</div>
     </td>
-    <td>${u.username || ''}</td>
     <td>
       <select class="plan-select" data-id="${u.id}">
         ${planOptions(u.plan)}
