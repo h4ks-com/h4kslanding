@@ -45,7 +45,7 @@ SHOW_NAV = True
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG')
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 #ALLOWED_HOSTS = ['h4ks.com',]
 ALLOWED_HOSTS = ['*',]
