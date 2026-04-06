@@ -195,11 +195,7 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
     <div><span>user </span><strong>{{ user.username }}</strong></div>
     <div><span>email </span><strong id="display-email">{{ user.email }}</strong></div>
     <div>
-      {% if user.is_staff %}
-        <span class="badge badge-admin">ADMIN</span>
-      {% else %}
-        <span class="badge">member</span>
-      {% endif %}
+      <span class="badge {% if user.is_staff %}badge-admin{% endif %}">{{ plan }}</span>
     </div>
   </div>
 
@@ -231,11 +227,12 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
     </p>
     <div class="form-group">
       <label for="mail_password">new password</label>
-      <input type="password" id="mail_password" placeholder="min 8 characters">
+      <input type="password" id="mail_password" placeholder="min 8 characters" minlength="8" autocomplete="new-password">
     </div>
     <div class="form-group">
       <label for="mail_password_confirm">confirm password</label>
-      <input type="password" id="mail_password_confirm" placeholder="repeat password">
+      <input type="password" id="mail_password_confirm" placeholder="repeat password" minlength="8" autocomplete="new-password">
+      <div class="field-hint" id="mail-pw2-hint" style="display:none;color:var(--accent2)">Passwords do not match.</div>
     </div>
     <div class="mail-info">
       <strong>IMAP:</strong> h4ks.com &middot; 993 (SSL) / 143 (STARTTLS)<br>
@@ -302,24 +299,45 @@ document.getElementById('profileForm').addEventListener('submit', async function
   }
 });
 
+const mailPw  = document.getElementById('mail_password');
+const mailPw2 = document.getElementById('mail_password_confirm');
+const mailPw2Hint = document.getElementById('mail-pw2-hint');
+
+if (mailPw2) {
+  mailPw2.addEventListener('input', () => {
+    const mismatch = mailPw2.value && mailPw.value !== mailPw2.value;
+    mailPw2Hint.style.display = mismatch ? 'block' : 'none';
+    mailPw2.setCustomValidity(mismatch ? 'mismatch' : '');
+  });
+  mailPw.addEventListener('input', () => {
+    if (mailPw2.value) mailPw2.dispatchEvent(new Event('input'));
+  });
+}
+
 const mailBtn = document.getElementById('mailPasswordButton');
 if (mailBtn) mailBtn.addEventListener('click', async function () {
+  if (mailPw.value !== mailPw2.value) {
+    mailPw2Hint.style.display = 'block';
+    return;
+  }
+  if (mailPw.value.length < 8) return;
   const btn = this;
   const res = document.getElementById('mailResult');
   btn.disabled = true;
   res.style.display = 'none';
   try {
     const fd = new FormData();
-    fd.append('mail_password', document.getElementById('mail_password').value);
-    fd.append('mail_password_confirm', document.getElementById('mail_password_confirm').value);
+    fd.append('mail_password', mailPw.value);
+    fd.append('mail_password_confirm', mailPw2.value);
     fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     const r = await fetch('{% url "set_mail_password" %}', { method: 'POST', body: fd });
     const data = await r.json();
     if (data.success) {
       res.className = 'result success';
       res.textContent = '✓ ' + data.message;
-      document.getElementById('mail_password').value = '';
-      document.getElementById('mail_password_confirm').value = '';
+      mailPw.value = '';
+      mailPw2.value = '';
+      mailPw2Hint.style.display = 'none';
     } else {
       throw new Error(data.error || 'unknown error');
     }

@@ -447,10 +447,10 @@ def get_logto_access_token() -> str | None:
         print(f"Exception getting Logto token: {str(e)}")
         return None
 
-def user_has_mail_role(logto_sub: str) -> bool:
+def get_user_roles(logto_sub: str) -> set[str]:
     access_token = get_logto_access_token()
     if not access_token:
-        return False
+        return set()
     try:
         response = httpx.get(
             f"{settings.LOGTO_ENDPOINT}/api/users/{logto_sub}/roles",
@@ -458,10 +458,14 @@ def user_has_mail_role(logto_sub: str) -> bool:
             timeout=8.0,
         )
         if response.status_code != 200:
-            return False
-        return any(r.get('name') == 'mail' for r in response.json())
+            return set()
+        return {r['name'] for r in response.json()}
     except httpx.RequestError:
-        return False
+        return set()
+
+
+def user_has_mail_role(logto_sub: str) -> bool:
+    return 'mail' in get_user_roles(logto_sub)
 
 
 def get_logto_roles_map(access_token: str) -> dict[str, str]:
@@ -698,11 +702,13 @@ def profile(request):
         user_profile.save()
         return JsonResponse({'success': True, 'message': 'Profile updated successfully!'})
 
+    roles = get_user_roles(user_profile.logto_sub) if user_profile.logto_sub else set()
     template = loader.get_template('profile.html')
     context = {
         'user': request.user,
         'profile': user_profile,
-        'has_mail_role': request.user.is_staff or (user_has_mail_role(user_profile.logto_sub) if user_profile.logto_sub else False),
+        'has_mail_role': request.user.is_staff or ('mail' in roles),
+        'plan': PLANS['root']['display'] if request.user.is_staff else PLANS[plan_from_roles(roles)]['display'],
     }
     return HttpResponse(template.render(context, request))
 
