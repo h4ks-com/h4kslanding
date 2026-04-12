@@ -704,12 +704,14 @@ def profile(request):
         return JsonResponse({'success': True, 'message': 'Profile updated successfully!'})
 
     roles = get_user_roles(user_profile.logto_sub) if user_profile.logto_sub else set()
+    plan_key = 'root' if request.user.is_staff else plan_from_roles(roles)
     template = loader.get_template('profile.html')
     context = {
         'user': request.user,
         'profile': user_profile,
         'has_mail_role': request.user.is_staff or ('mail' in roles),
-        'plan': PLANS['root']['display'] if request.user.is_staff else PLANS[plan_from_roles(roles)]['display'],
+        'is_guest': plan_key == 'guest',
+        'plan': PLANS[plan_key]['display'],
     }
     return HttpResponse(template.render(context, request))
 
