@@ -13,11 +13,37 @@ from .models import Location, App, PendingUser, UserProfile, Announcement, Featu
 from .plans import PLANS, ALL_PLAN_ROLES, USERNAME_RE, plan_from_roles
 import httpx
 import base64
+import imaplib
 import secrets
 import hashlib
 import json
+import ssl
 from functools import wraps
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
+
+_MAIL_QUOTA = 100 * 1024 * 1024  # 100 MB — applied on first password set
+
+
+def _bootstrap_stalwart_principal(access_token: str) -> None:
+    """Force Stalwart to create a local principal by doing an OAUTHBEARER IMAP
+    auth.
+
+    Stalwart with storage.directory = "logto" rejects POST
+    /api/principal (OIDC dirs are read-only via admin API). The only way
+    to create the principal is to let Stalwart process a real OIDC
+    authentication — it auto-creates the record on first login. We do
+    that here transparently so the user never has to open Roundcube.
+    """
+    imap_host = urlparse(settings.STALWART_API_URL).hostname
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    # OAUTHBEARER SASL (RFC 7628): n,,\x01auth=Bearer <token>\x01\x01
+    auth_bytes = b"n,,\x01auth=Bearer " + access_token.encode() + b"\x01\x01"
+    auth_b64 = base64.b64encode(auth_bytes)
+    with imaplib.IMAP4_SSL(imap_host, 993, ssl_context=ctx) as imap:
+        imap.authenticate('OAUTHBEARER', lambda _: auth_b64)
+        imap.logout()
 
 def require_api_token(view_func):
     @wraps(view_func)
@@ -748,19 +774,27 @@ def set_mail_password(request):
     try:
         check = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0)
         if check.status_code == 404:
-            resp = httpx.post(
-                f'{api_base}/principal',
-                auth=auth,
-                json={'type': 'individual', 'name': email, 'emails': [email], 'secrets': [f'$app$mail${password}']},
-                timeout=8.0,
-            )
-        else:
-            resp = httpx.patch(
-                f'{api_base}/principal/{principal_id}',
-                auth=auth,
-                json=[{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}],
-                timeout=8.0,
-            )
+            token = request.session.get('oidc_access_token')
+            if not token:
+                return JsonResponse({'success': False, 'error': 'Session expired, please log in again.'}, status=401)
+            try:
+                _bootstrap_stalwart_principal(token)
+            except imaplib.IMAP4.error as e:
+                return JsonResponse({'success': False, 'error': f'Could not initialise mail account: {e}'}, status=502)
+            check = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0)
+
+        if check.status_code == 404:
+            return JsonResponse({'success': False, 'error': 'Mail account could not be initialised.'}, status=502)
+
+        patch_ops = [{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}]
+        if not check.json().get('quota'):
+            patch_ops.append({'action': 'set', 'field': 'quota', 'value': _MAIL_QUOTA})
+        resp = httpx.patch(
+            f'{api_base}/principal/{principal_id}',
+            auth=auth,
+            json=patch_ops,
+            timeout=8.0,
+        )
         if resp.status_code not in (200, 201):
             return JsonResponse({'success': False, 'error': f'Mail server error ({resp.status_code}).'}, status=502)
     except httpx.RequestError as e:
