@@ -11,6 +11,7 @@ from django.db.models import Count
 
 from .models import Location, App, PendingUser, UserProfile, Announcement, FeaturedProject, ApiToken, ChatLine
 from .plans import PLANS, ALL_PLAN_ROLES, USERNAME_RE, plan_from_roles
+import logging
 import httpx
 import base64
 import imaplib
@@ -20,6 +21,8 @@ import json
 import ssl
 from functools import wraps
 from urllib.parse import quote, urlparse
+
+logger = logging.getLogger(__name__)
 
 _MAIL_QUOTA = 100 * 1024 * 1024  # 100 MB — applied on first password set
 
@@ -40,9 +43,8 @@ def _bootstrap_stalwart_principal(access_token: str) -> None:
     ctx.verify_mode = ssl.CERT_NONE
     # OAUTHBEARER SASL (RFC 7628): n,,\x01auth=Bearer <token>\x01\x01
     auth_bytes = b"n,,\x01auth=Bearer " + access_token.encode() + b"\x01\x01"
-    auth_b64 = base64.b64encode(auth_bytes)
     with imaplib.IMAP4_SSL(imap_host, 993, ssl_context=ctx) as imap:
-        imap.authenticate('OAUTHBEARER', lambda _: auth_b64)
+        imap.authenticate('OAUTHBEARER', lambda _: auth_bytes)
         imap.logout()
 
 def require_api_token(view_func):
@@ -772,33 +774,37 @@ def set_mail_password(request):
     # The @ must be percent-encoded in the URL path to avoid a 401/routing issue.
     principal_id = quote(email, safe='')
     try:
-        check = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0)
-        if check.status_code == 404:
+        check_data = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0).json()
+        if check_data.get('error') == 'notFound':
             token = request.session.get('oidc_access_token')
             if not token:
                 return JsonResponse({'success': False, 'error': 'Session expired, please log in again.'}, status=401)
             try:
                 _bootstrap_stalwart_principal(token)
             except imaplib.IMAP4.error as e:
-                return JsonResponse({'success': False, 'error': f'Could not initialise mail account: {e}'}, status=502)
-            check = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0)
+                logger.error('mail bootstrap failed for %s: %s', email, e)
+                return JsonResponse({'success': False, 'error': 'Could not initialise mail account.'}, status=502)
+            check_data = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0).json()
 
-        if check.status_code == 404:
-            return JsonResponse({'success': False, 'error': 'Mail account could not be initialised.'}, status=502)
+        if check_data.get('error') == 'notFound':
+            logger.error('mail principal still missing after bootstrap for %s', email)
+            return JsonResponse({'success': False, 'error': 'Could not initialise mail account.'}, status=502)
 
         patch_ops = [{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}]
-        if not check.json().get('quota'):
+        if not check_data.get('quota'):
             patch_ops.append({'action': 'set', 'field': 'quota', 'value': _MAIL_QUOTA})
-        resp = httpx.patch(
+        resp_data = httpx.patch(
             f'{api_base}/principal/{principal_id}',
             auth=auth,
             json=patch_ops,
             timeout=8.0,
-        )
-        if resp.status_code not in (200, 201):
-            return JsonResponse({'success': False, 'error': f'Mail server error ({resp.status_code}).'}, status=502)
+        ).json()
+        if resp_data.get('error'):
+            logger.error('mail PATCH failed for %s: %s', email, resp_data)
+            return JsonResponse({'success': False, 'error': 'Failed to update mail password.'}, status=502)
     except httpx.RequestError as e:
-        return JsonResponse({'success': False, 'error': f'Could not reach mail server: {e}'}, status=502)
+        logger.error('mail server unreachable for %s: %s', email, e)
+        return JsonResponse({'success': False, 'error': 'Could not reach mail server.'}, status=502)
 
     return JsonResponse({'success': True, 'message': 'Mail password updated. Configure your client with this password.'})
 

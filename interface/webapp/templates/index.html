@@ -438,7 +438,7 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
         </div>
       </a>
 
-      <a href="https://delta.chat" target="_blank" rel="noopener noreferrer" class="community-card" style="--card-color:#44a7e0">
+      <div class="community-card" style="--card-color:#44a7e0">
         <div class="community-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -449,18 +449,36 @@ a.community-card:hover { background: #1a1f30; text-decoration: none; }
           <div class="community-name">Delta Chat</div>
           <div class="community-desc">Encrypted chat over e-mail. Use any e-mail address — no h4ks account needed. All channels bridged.</div>
           <div class="community-irc">
-            <strong>get the app</strong> &nbsp;delta.chat<br>
-            <strong>invite links</strong> &nbsp;ask in <strong>#lobby</strong>
+            <strong>get the app</strong> &nbsp;<a href="https://delta.chat" target="_blank" rel="noopener noreferrer">delta.chat ↗</a><br>
+            <a href="https://i.delta.chat/#651033D399B0082C6D2A7C0FFA03EB012B11F6D4&v=3&x=DIdlyHb-BGHuR454QFNfHV47&i=O6Jyl2N3QyQAO0A-tT6GOw7P&s=NwF7itRrdb4_Yh3iH1quIAet&a=deltachat%40h4ks.com&n=&g=h4ks+lobby" target="_blank" rel="noopener noreferrer">#lobby ↗</a>
+            &nbsp;·&nbsp;
+            <a href="https://i.delta.chat/#651033D399B0082C6D2A7C0FFA03EB012B11F6D4&v=3&x=fTjuezCR5fidzZ1Mh1qh0X6a&i=XuU6ClgNUHXGi514by9exusv&s=bG8SqDGiN5k3WKh46nykGhPf&a=deltachat%40h4ks.com&n=&g=h4ks+bots" target="_blank" rel="noopener noreferrer">#bots ↗</a>
+            &nbsp;·&nbsp;
+            <a href="https://i.delta.chat/#651033D399B0082C6D2A7C0FFA03EB012B11F6D4&v=3&x=WvQJpRTv-ls7npIAzg-F0rNc&i=dZ5M_YJo3aNcMCDwwHwQqVWE&s=Q8Wj7MAyo-BP_zbeEqPLzFsW&a=deltachat%40h4ks.com&n=&g=h4ks+minecraft" target="_blank" rel="noopener noreferrer">#minecraft ↗</a>
+            &nbsp;·&nbsp;
+            <a href="https://i.delta.chat/#651033D399B0082C6D2A7C0FFA03EB012B11F6D4&v=3&x=Kcujl3_zfGlAkYMHLIf1ysAL&i=hmt44Cxt-I1XIR8AZlsCpAGd&s=Na2HrVLy1AGgFlMmSwoLNvDE&a=deltachat%40h4ks.com&n=&g=h4ks+news" target="_blank" rel="noopener noreferrer">#news ↗</a>
+            &nbsp;·&nbsp;
+            <a href="https://i.delta.chat/#651033D399B0082C6D2A7C0FFA03EB012B11F6D4&v=3&x=QAP24VwsKTXa0MdnbDWJ4JXp&i=EmF0k8FlRCo-cYHAZxEu3x4G&s=d5By94eN706RZhKnm2JdUNXA&a=deltachat%40h4ks.com&n=&g=h4ks+buddhism" target="_blank" rel="noopener noreferrer">#buddhism ↗</a>
           </div>
         </div>
-      </a>
+      </div>
 
-    </div>
-    <div class="community-tg">
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.93 8.027l-1.96 9.243c-.145.644-.523.8-1.06.497l-2.926-2.155-1.413 1.358c-.156.156-.288.288-.59.288l.21-2.98 5.43-4.908c.236-.21-.051-.326-.365-.116L6.88 13.87l-2.883-.9c-.626-.196-.638-.626.131-.927l11.265-4.344c.522-.19.98.128.537.328z"/>
-      </svg>
-      <span>Telegram — we have a group, but membership is selective. Ask in <strong>#lobby</strong> if you're interested.</span>
+
+      <div class="community-card" style="--card-color:#2aabee;cursor:default">
+        <div class="community-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.93 8.027l-1.96 9.243c-.145.644-.523.8-1.06.497l-2.926-2.155-1.413 1.358c-.156.156-.288.288-.59.288l.21-2.98 5.43-4.908c.236-.21-.051-.326-.365-.116L6.88 13.87l-2.883-.9c-.626-.196-.638-.626.131-.927l11.265-4.344c.522-.19.98.128.537.328z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="community-name">Telegram</div>
+          <div class="community-desc">We have a group, but membership is selective.</div>
+          <div class="community-irc">
+            <strong>to join</strong> &nbsp;ask in <strong>#lobby</strong>
+          </div>
+        </div>
+      </div>
+
     </div>
     {% if not user.is_authenticated %}
     <div class="community-tg" style="border-color:var(--accent2);background:#1f1208;color:var(--text);">

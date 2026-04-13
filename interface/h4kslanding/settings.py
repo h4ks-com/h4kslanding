@@ -185,4 +185,5 @@ OIDC_OP_USER_ENDPOINT = f"{config('LOGTO_ENDPOINT')}/oidc/me"
 OIDC_OP_JWKS_ENDPOINT = f"{config('LOGTO_ENDPOINT')}/oidc/jwks"
 OIDC_OP_LOGOUT_URL_METHOD = 'webapp.auth.provider_logout'
 OIDC_RP_SIGN_ALGO = 'ES384'
-OIDC_RP_SCOPES = 'openid profile email'
+OIDC_RP_SCOPES = 'openid profile email roles'
+OIDC_STORE_ACCESS_TOKEN = True
