@@ -7,26 +7,46 @@ from urllib.parse import urlencode
 class LogtoOIDCAuthenticationBackend(OIDCAuthenticationBackend):
 
     def filter_users_by_claims(self, claims):
-        """Look up user by Logto sub claim stored in UserProfile."""
+        """Look up user by Logto sub, falling back to email/username for legacy
+        accounts created before logto_sub linking (e.g. Django superusers)."""
         sub = claims.get('sub')
-        if not sub:
-            return self.UserModel.objects.none()
+        if sub:
+            try:
+                profile = UserProfile.objects.get(logto_sub=sub)
+                return self.UserModel.objects.filter(id=profile.user.id)
+            except UserProfile.DoesNotExist:
+                pass
 
-        try:
-            profile = UserProfile.objects.get(logto_sub=sub)
-            return self.UserModel.objects.filter(id=profile.user.id)
-        except UserProfile.DoesNotExist:
-            return self.UserModel.objects.none()
+        email = claims.get('email', '').strip()
+        if email:
+            by_email = self.UserModel.objects.filter(
+                email__iexact=email, profile__logto_sub__isnull=True,
+            )
+            if by_email.count() == 1:
+                return by_email
+
+        logto_username = (claims.get('username') or '').strip()
+        if logto_username:
+            by_username = self.UserModel.objects.filter(
+                username__iexact=logto_username, profile__logto_sub__isnull=True,
+            )
+            if by_username.count() == 1:
+                return by_username
+
+        return self.UserModel.objects.none()
 
     def create_user(self, claims):
-        """Create user with email-based username and store sub in profile."""
-        email = claims.get('email', '')
+        """Create user from claims; sub is the stable identity key."""
+        email = claims.get('email', '') or ''
         sub = claims.get('sub')
-
-        if not email:
+        if not sub:
             return None
 
-        username = email.split('@')[0]
+        username = (claims.get('username') or '').strip()
+        if not username and email:
+            username = email.split('@')[0]
+        if not username:
+            return None
 
         base_username = username
         counter = 1
@@ -36,7 +56,7 @@ class LogtoOIDCAuthenticationBackend(OIDCAuthenticationBackend):
 
         user = self.UserModel.objects.create_user(
             username=username,
-            email=email
+            email=email,
         )
 
         if hasattr(user, 'profile'):
