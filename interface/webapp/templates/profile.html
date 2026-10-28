@@ -105,17 +105,19 @@ select option { background: var(--bg-panel); }
   font-family: 'Courier New', monospace;
 }
 
-input[type="password"] {
-  width: 100%;
+.secret-row { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.secret-row input {
+  flex: 1;
+  min-width: 0;
   background: var(--code-bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--accent);
   color: var(--text);
   padding: 0.6rem 0.8rem;
   font-size: 0.85rem;
   font-family: 'Courier New', monospace;
   outline: none;
 }
-input[type="password"]:focus { border-color: var(--accent); }
+.secret-row .btn-secondary { margin-top: 0; }
 
 .mail-info {
   background: var(--bg-panel);
@@ -230,6 +232,13 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
       username: {{ user.email }}
     </div>
     <button type="button" class="btn-secondary" id="mailPasswordButton">generate mail password</button>
+    <div id="mailSecret" style="display:none;">
+      <div class="secret-row">
+        <input type="text" id="mailSecretValue" readonly aria-label="mail password">
+        <button type="button" class="btn-secondary" id="mailSecretCopy">copy</button>
+      </div>
+      <div class="field-hint" id="mailSecretHint"></div>
+    </div>
     <div id="mailResult" class="result"></div>
   </div>
   {% elif is_guest %}
@@ -301,25 +310,44 @@ document.getElementById('profileForm').addEventListener('submit', async function
   }
 });
 
+const mailSecret = document.getElementById('mailSecret');
+const mailSecretValue = document.getElementById('mailSecretValue');
+const mailSecretHint = document.getElementById('mailSecretHint');
+
+async function copyMailSecret() {
+  try {
+    await navigator.clipboard.writeText(mailSecretValue.value);
+    mailSecretHint.textContent = 'copied to clipboard. it is shown only once, paste it into your mail client now.';
+  } catch (err) {
+    mailSecretValue.select();
+    mailSecretHint.textContent = 'press copy, or select it and copy by hand. it is shown only once.';
+  }
+}
+
+const mailCopyBtn = document.getElementById('mailSecretCopy');
+if (mailCopyBtn) mailCopyBtn.addEventListener('click', copyMailSecret);
+
 const mailBtn = document.getElementById('mailPasswordButton');
 if (mailBtn) mailBtn.addEventListener('click', async function () {
   const btn = this;
   const res = document.getElementById('mailResult');
   btn.disabled = true;
   res.style.display = 'none';
+  mailSecret.style.display = 'none';
   try {
     const fd = new FormData();
     fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     const r = await fetch('{% url "set_mail_password" %}', { method: 'POST', body: fd });
     const data = await r.json();
     if (!data.success) throw new Error(data.error || 'unknown error');
-    res.className = 'result success';
-    res.textContent = 'copy it into your mail client now, it is shown only once: ' + data.password;
+    mailSecretValue.value = data.password;
+    mailSecret.style.display = 'block';
+    await copyMailSecret();
   } catch (err) {
     res.className = 'result error';
     res.textContent = '✗ ' + err.message;
-  } finally {
     res.style.display = 'block';
+  } finally {
     btn.disabled = false;
   }
 });
