@@ -10,42 +10,20 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Count
 
 from .models import Location, App, PendingUser, UserProfile, Announcement, FeaturedProject, ApiToken, ChatLine
+from . import stalwart
 from .plans import PLANS, ALL_PLAN_ROLES, USERNAME_RE, plan_from_roles
 import logging
 import httpx
 import base64
-import imaplib
 import secrets
 import hashlib
 import json
-import ssl
 from functools import wraps
-from urllib.parse import quote, urlparse
 
 logger = logging.getLogger(__name__)
 
-_MAIL_QUOTA = 100 * 1024 * 1024  # 100 MB — applied on first password set
+_MAIL_QUOTA = 100 * 1024 * 1024
 
-
-def _bootstrap_stalwart_principal(access_token: str) -> None:
-    """Force Stalwart to create a local principal by doing an OAUTHBEARER IMAP
-    auth.
-
-    Stalwart with storage.directory = "logto" rejects POST
-    /api/principal (OIDC dirs are read-only via admin API). The only way
-    to create the principal is to let Stalwart process a real OIDC
-    authentication — it auto-creates the record on first login. We do
-    that here transparently so the user never has to open Roundcube.
-    """
-    imap_host = urlparse(settings.STALWART_API_URL).hostname
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    # OAUTHBEARER SASL (RFC 7628): n,,\x01auth=Bearer <token>\x01\x01
-    auth_bytes = b"n,,\x01auth=Bearer " + access_token.encode() + b"\x01\x01"
-    with imaplib.IMAP4_SSL(imap_host, 993, ssl_context=ctx) as imap:
-        imap.authenticate('OAUTHBEARER', lambda _: auth_bytes)
-        imap.logout()
 
 def require_api_token(view_func):
     @wraps(view_func)
@@ -749,16 +727,6 @@ def set_mail_password(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
 
-    password = request.POST.get('mail_password', '').strip()
-    confirm  = request.POST.get('mail_password_confirm', '').strip()
-
-    if not password:
-        return JsonResponse({'success': False, 'error': 'Password is required.'}, status=400)
-    if len(password) < 8:
-        return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters.'}, status=400)
-    if password != confirm:
-        return JsonResponse({'success': False, 'error': 'Passwords do not match.'}, status=400)
-
     logto_sub = getattr(request.user, 'profile', None) and request.user.profile.logto_sub
     if not request.user.is_staff and (not logto_sub or not user_has_mail_role(logto_sub)):
         return JsonResponse({'success': False, 'error': 'Mail access not enabled for your account.'}, status=403)
@@ -767,80 +735,10 @@ def set_mail_password(request):
     if not email:
         return JsonResponse({'success': False, 'error': 'No email address on your account.'}, status=400)
 
-    api_base = settings.STALWART_API_URL.rstrip('/')
-    auth     = (settings.STALWART_ADMIN_USER, settings.STALWART_ADMIN_SECRET)
-
-    # Stalwart creates principals named by full email (directory.logto.fields.username = "email").
-    # The @ must be percent-encoded in the URL path to avoid a 401/routing issue.
-    principal_id = quote(email, safe='')
     try:
-        check_data = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0).json()
-        if check_data.get('error') == 'notFound':
-            token = request.session.get('oidc_access_token')
-            if not token:
-                return JsonResponse({'success': False, 'error': 'Session expired, please log in again.'}, status=401)
-            try:
-                _bootstrap_stalwart_principal(token)
-            except imaplib.IMAP4.error as e:
-                logger.error('mail bootstrap failed for %s: %s', email, e)
-                return JsonResponse({'success': False, 'error': 'Could not initialise mail account.'}, status=502)
-            check_data = httpx.get(f'{api_base}/principal/{principal_id}', auth=auth, timeout=8.0).json()
-
-        if check_data.get('error') == 'notFound':
-            logger.error('mail principal still missing after bootstrap for %s', email)
-            return JsonResponse({'success': False, 'error': 'Could not initialise mail account.'}, status=502)
-
-        patch_ops = [{'action': 'set', 'field': 'secrets', 'value': f'$app$mail${password}'}]
-        if not check_data.get('quota'):
-            patch_ops.append({'action': 'set', 'field': 'quota', 'value': _MAIL_QUOTA})
-        resp_data = httpx.patch(
-            f'{api_base}/principal/{principal_id}',
-            auth=auth,
-            json=patch_ops,
-            timeout=8.0,
-        ).json()
-        if resp_data.get('error'):
-            logger.error('mail PATCH failed for %s: %s', email, resp_data)
-            return JsonResponse({'success': False, 'error': 'Failed to update mail password.'}, status=502)
-    except httpx.RequestError as e:
-        logger.error('mail server unreachable for %s: %s', email, e)
+        password = stalwart.replace_profile_password(email, _MAIL_QUOTA)
+    except (httpx.HTTPError, stalwart.StalwartError) as e:
+        logger.error('mail password failed for %s: %s', email, e)
         return JsonResponse({'success': False, 'error': 'Could not reach mail server.'}, status=502)
 
-    return JsonResponse({'success': True, 'message': 'Mail password updated. Configure your client with this password.'})
-
-
-@require_http_methods(["GET"])
-def mail_userinfo_proxy(request: HttpRequest) -> JsonResponse:
-    """Stalwart OIDC directory endpoint with mail-role enforcement.
-
-    Stalwart v0.15 calls this URL with the client's bearer token and
-    treats HTTP 200 as authentication success, non-200 as failure. We
-    forward the token to Logto's /oidc/me and gate on the 'mail' role
-    before returning 200. Remove this proxy when upgrading to Stalwart
-    v0.16 (see config.toml comment).
-    """
-    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
-
-    token = auth_header[len('Bearer '):]
-
-    try:
-        resp = httpx.get(
-            f'{settings.LOGTO_ENDPOINT}/oidc/me',
-            headers={'Authorization': f'Bearer {token}'},
-            timeout=8.0,
-        )
-    except httpx.RequestError:
-        return JsonResponse({'error': 'Upstream unavailable'}, status=502)
-
-    if resp.status_code != 200:
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
-
-    data = resp.json()
-    roles: list[str] = data.get('roles', [])
-
-    if 'mail' not in roles:
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
-
-    return JsonResponse(data, status=200)
+    return JsonResponse({'success': True, 'password': password})

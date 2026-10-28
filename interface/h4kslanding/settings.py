@@ -31,9 +31,8 @@ LOGTO_APP_ID = config('LOGTO_APP_ID', default='')
 LOGTO_APP_SECRET = config('LOGTO_APP_SECRET', default='')
 LOGTO_REDIRECT_URI = config('LOGTO_REDIRECT_URI', default='https://h4ks.com/auth/callback')
 
-STALWART_API_URL      = config('STALWART_API_URL',      default='https://mail.h4ks.com/api')
-STALWART_ADMIN_USER   = config('STALWART_ADMIN_USER',   default='admin')
-STALWART_ADMIN_SECRET = config('STALWART_ADMIN_SECRET', default='')
+STALWART_JMAP_URL     = config('STALWART_JMAP_URL',     default='https://mail.h4ks.com/jmap/')
+STALWART_API_KEY      = config('STALWART_API_KEY',      default='')
 
 TURNSTILE_SITE_KEY   = config('TURNSTILE_SITE_KEY',   default='')
 TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='')

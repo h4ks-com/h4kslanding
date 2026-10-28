@@ -222,23 +222,14 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
   <div class="section" style="margin-top:2rem;">
     <div class="section-label">mail</div>
     <p style="font-size:0.85rem; margin-bottom:0.8rem; color:var(--text-dim);">
-      Set a password for IMAP/SMTP clients (Thunderbird, etc.).
+      Generate a password for IMAP/SMTP clients (Thunderbird, etc.). Generating a new one revokes the previous one.
     </p>
-    <div class="form-group">
-      <label for="mail_password">new password</label>
-      <input type="password" id="mail_password" placeholder="min 8 characters" minlength="8" autocomplete="new-password">
-    </div>
-    <div class="form-group">
-      <label for="mail_password_confirm">confirm password</label>
-      <input type="password" id="mail_password_confirm" placeholder="repeat password" minlength="8" autocomplete="new-password">
-      <div class="field-hint" id="mail-pw2-hint" style="display:none;color:var(--accent2)">Passwords do not match.</div>
-    </div>
     <div class="mail-info">
       <strong>IMAP:</strong> h4ks.com &middot; 993 (SSL) / 143 (STARTTLS)<br>
       <strong>SMTP:</strong> h4ks.com &middot; 465 (SSL) / 587 (STARTTLS)<br>
-      username: {{ user.username }}@h4ks.com
+      username: {{ user.email }}
     </div>
-    <button type="button" class="btn-secondary" id="mailPasswordButton">set mail password</button>
+    <button type="button" class="btn-secondary" id="mailPasswordButton">generate mail password</button>
     <div id="mailResult" class="result"></div>
   </div>
   {% elif is_guest %}
@@ -247,15 +238,11 @@ button[type="submit"]:disabled { background: var(--border); color: var(--text-di
     <p style="font-size:0.85rem; margin-bottom:0.8rem; color:var(--text-dim);">
       Email (IMAP/SMTP) is not available on the Guest plan. Upgrade to Shell or higher to get a mailbox.
     </p>
-    <div class="form-group">
-      <label>new password</label>
-      <input type="password" placeholder="not available" disabled style="cursor:not-allowed;">
-    </div>
     <div class="mail-info">
       <strong>IMAP:</strong> h4ks.com &middot; 993 (SSL) / 143 (STARTTLS)<br>
       <strong>SMTP:</strong> h4ks.com &middot; 465 (SSL) / 587 (STARTTLS)
     </div>
-    <button type="button" class="btn-secondary" disabled>set mail password</button>
+    <button type="button" class="btn-secondary" disabled>generate mail password</button>
   </div>
   {% endif %}
 {% endblock %}
@@ -314,48 +301,20 @@ document.getElementById('profileForm').addEventListener('submit', async function
   }
 });
 
-const mailPw  = document.getElementById('mail_password');
-const mailPw2 = document.getElementById('mail_password_confirm');
-const mailPw2Hint = document.getElementById('mail-pw2-hint');
-
-if (mailPw2) {
-  mailPw2.addEventListener('input', () => {
-    const mismatch = mailPw2.value && mailPw.value !== mailPw2.value;
-    mailPw2Hint.style.display = mismatch ? 'block' : 'none';
-    mailPw2.setCustomValidity(mismatch ? 'mismatch' : '');
-  });
-  mailPw.addEventListener('input', () => {
-    if (mailPw2.value) mailPw2.dispatchEvent(new Event('input'));
-  });
-}
-
 const mailBtn = document.getElementById('mailPasswordButton');
 if (mailBtn) mailBtn.addEventListener('click', async function () {
-  if (mailPw.value !== mailPw2.value) {
-    mailPw2Hint.style.display = 'block';
-    return;
-  }
-  if (mailPw.value.length < 8) return;
   const btn = this;
   const res = document.getElementById('mailResult');
   btn.disabled = true;
   res.style.display = 'none';
   try {
     const fd = new FormData();
-    fd.append('mail_password', mailPw.value);
-    fd.append('mail_password_confirm', mailPw2.value);
     fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     const r = await fetch('{% url "set_mail_password" %}', { method: 'POST', body: fd });
     const data = await r.json();
-    if (data.success) {
-      res.className = 'result success';
-      res.textContent = '✓ ' + data.message;
-      mailPw.value = '';
-      mailPw2.value = '';
-      mailPw2Hint.style.display = 'none';
-    } else {
-      throw new Error(data.error || 'unknown error');
-    }
+    if (!data.success) throw new Error(data.error || 'unknown error');
+    res.className = 'result success';
+    res.textContent = 'copy it into your mail client now, it is shown only once: ' + data.password;
   } catch (err) {
     res.className = 'result error';
     res.textContent = '✗ ' + err.message;
